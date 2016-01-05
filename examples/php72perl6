@@ -1,0 +1,10 @@
+#!/usr/bin/env perl6
+use PHP7::Actions::Perl6;
+
+sub MAIN( Str $filename )
+	{
+	my $p = PHP7::Actions::Perl6.new;
+	say $p.parsefile( $filename ).perl6;
+	}
+
+# vim: ft=perl6
