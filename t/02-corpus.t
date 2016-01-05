@@ -9,63 +9,176 @@ subtest sub {
 
   my $g = PHP5::Grammar.new;
 
-  #ok $g.parsefile( 'corpus/Abnf.g4'                ), 'Abnf.g4';
-  #ok $g.parsefile( 'corpus/ANTLRv4Lexer.g4'        ), 'ANTLRv4Lexer.g4';
-  #ok $g.parsefile( 'corpus/ANTLRv4Parser.g4'       ), 'ANTLRv4Parser.g4';
-  #ok $g.parsefile( 'corpus/asm6502.g4'             ), 'asm6502.g4';
-  #ok $g.parsefile( 'corpus/ATL.g4'                 ), 'ATL.g4';
-  #ok $g.parsefile( 'corpus/bnf.g4'                 ), 'bnf.g4';
-  #ok $g.parsefile( 'corpus/C.g4'                   ), 'C.g4';
-  #ok $g.parsefile( 'corpus/Clojure.g4'             ), 'Clojure.g4';
-  #ok $g.parsefile( 'corpus/creole.g4'              ), 'creole.g4';
-  #ok $g.parsefile( 'corpus/CSharp4.g4'             ), 'CSharp4.g4';
-  #ok $g.parsefile( 'corpus/CSharp4Lexer.g4'        ), 'CSharp4Lexer.g4';
-  #ok $g.parsefile( 'corpus/CSharp4PreProcessor.g4' ), 'CSharp4PreProcessor.g4';
-  #ok $g.parsefile( 'corpus/CSV.g4'                 ), 'CSV.g4';
-  #ok $g.parsefile( 'corpus/DOT.g4'                 ), 'DOT.g4';
-  #ok $g.parsefile( 'corpus/ECMAScript.g4'          ), 'ECMAScript.g4';
-  #ok $g.parsefile( 'corpus/Erlang.g4'              ), 'Erlang.g4';
-  #ok $g.parsefile( 'corpus/fasta.g4'               ), 'fasta.g4';
-  #ok $g.parsefile( 'corpus/gff3.g4'                ), 'gff3.g4';
-  #ok $g.parsefile( 'corpus/HTMLLexer.g4'           ), 'HTMLLexer.g4';
-  #ok $g.parsefile( 'corpus/HTMLParser.g4'          ), 'HTMLParser.g4';
-  #ok $g.parsefile( 'corpus/ICalendar.g4'           ), 'ICalendar.g4';
-  #ok $g.parsefile( 'corpus/IDL.g4'                 ), 'IDL.g4';
-  #ok $g.parsefile( 'corpus/IRI.g4'                 ), 'IRI.g4';
-  #ok $g.parsefile( 'corpus/Java8.g4'               ), 'Java8.g4';
-  #ok $g.parsefile( 'corpus/Java.g4'                ), 'Java.g4';
-  #ok $g.parsefile( 'corpus/JSON.g4'                ), 'JSON.g4';
-  #ok $g.parsefile( 'corpus/jvmBasic.g4'            ), 'jvmBasic.g4';
-  #ok $g.parsefile( 'corpus/LessLexer.g4'           ), 'LessLexer.g4';
-  #ok $g.parsefile( 'corpus/LessParser.g4'          ), 'LessParser.g4';
-  #ok $g.parsefile( 'corpus/logo.g4'                ), 'logo.g4';
-  #ok $g.parsefile( 'corpus/Lua.g4'                 ), 'Lua.g4';
-  #ok $g.parsefile( 'corpus/MySQLBase.g4'           ), 'MySQLBase.g4';
-  #ok $g.parsefile( 'corpus/MySQL.g4'               ), 'MySQL.g4';
-  #ok $g.parsefile( 'corpus/ObjC.g4'                ), 'ObjC.g4';
-  #ok $g.parsefile( 'corpus/PCRE.g4'                ), 'PCRE.g4';
-  #ok $g.parsefile( 'corpus/PGN.g4'                 ), 'PGN.g4';
-  #ok $g.parsefile( 'corpus/Python3.g4'             ), 'Python3.g4';
-  #ok $g.parsefile( 'corpus/redcode.g4'             ), 'redcode.g4';
-  #ok $g.parsefile( 'corpus/RFilter.g4'             ), 'RFilter.g4';
-  #ok $g.parsefile( 'corpus/R.g4'                   ), 'R.g4';
-  #ok $g.parsefile( 'corpus/scala.g4'               ), 'scala.g4';
-  #ok $g.parsefile( 'corpus/ScssLexer.g4'           ), 'ScssLexer.g4';
-  #ok $g.parsefile( 'corpus/ScssParser.g4'          ), 'ScssParser.g4';
-  #ok $g.parsefile( 'corpus/Smalltalk.g4'           ), 'Smalltalk.g4';
-  #ok $g.parsefile( 'corpus/SQLite.g4'              ), 'SQLite.g4';
-  #ok $g.parsefile( 'corpus/Swift.g4'               ), 'Swift.g4';
-  #ok $g.parsefile( 'corpus/tnsnames.g4'            ), 'tnsnames.g4';
-  #ok $g.parsefile( 'corpus/tnt.g4'                 ), 'tnt.g4';
-  #ok $g.parsefile( 'corpus/TURTLE.g4'              ), 'TURTLE.g4';
-  #ok $g.parsefile( 'corpus/UCBLogo.g4'             ), 'UCBLogo.g4';
-  #ok $g.parsefile( 'corpus/Verilog2001.g4'         ), 'Verilog2001.g4';
-  #ok $g.parsefile( 'corpus/vhdl.g4'                ), 'vhdl.g4';
-  ##ok $g.parsefile( 'corpus/VisualBasic6.g4'        ), 'VisualBasic6.g4';
-  #skip 'Need to fix UTF-8 issue', 1;
-  #ok $g.parsefile( 'corpus/WebIDL.g4'              ), 'WebIDL.g4';
-  #ok $g.parsefile( 'corpus/XMLLexer.g4'            ), 'XMLLexer.g4';
-  #ok $g.parsefile( 'corpus/XMLParser.g4'           ), 'XMLParser.g4';
+  ok $g.parsefile( 'corpus-v5/addglob.php' ), 'addglob.php';
+
+#addpattern.php
+#a.php
+#bench.php
+#book.php
+#b.php
+#bug39542.php
+#build_precommand.php
+#check_parameters.php
+#class_tree.php
+#cleanhtml5.php
+#cleanhtml.php
+#client_round2_interop.php
+#client_round2_params.php
+#client_round2.php
+#client_round2_results.php
+#client_round2_run.php
+#collator_api.php
+#comment.php
+#common_api.php
+#c.php
+#create_data_file.php
+#create.php
+#datefmt_api.php
+#dba_array.php
+#dba_dump.php
+#directorytree.php
+#dir.php
+#dom1.php
+#domdocumentload_test_method.php
+#domdocumentload_test_method_savexml.php
+#domdocumentload_utilities.php
+#domdocumentloadxml_test_method.php
+#domdocumentloadxml_test_method_savexml.php
+#dumpit5.php
+#echoheadersvc.wsdl.php
+#example1.php
+#example.php
+#extractAll.php
+#extract.php
+#ext_skel_win32.php
+#fetch.php
+#fileinfo.php
+#findfile.php
+#findregex.php
+#find_tested.php
+#fixture.php
+#foo_bar.php
+#foo_php_version.php
+#foo_strlen.php
+#fopen.php
+#formatter_api.php
+#generate-phpt.php
+#get_error_codes.php
+#get.php
+#get_set_comments.php
+#global_bar.php
+#global_baz.php
+#grapheme_api.php
+#gtAutoload.php
+#gtBasicTestCaseFunction.php
+#gtBasicTestCaseFunctionTest.php
+#gtBasicTestCaseMethod.php
+#gtBasicTestCaseMethodTest.php
+#gtBasicTestCase.php
+#gtClassMap.php
+#gtCodeSnippet.php
+#gtCodeSnippetTest.php
+#gtCommandLineOptions.php
+#gtCommandLineOptionsTest.php
+#gtErrorTestCaseFunction.php
+#gtErrorTestCaseFunctionTest.php
+#gtErrorTestCaseMethod.php
+#gtErrorTestCaseMethodTest.php
+#gtErrorTestCase.php
+#gtFunction.php
+#gtFunctionTest.php
+#gtIfClassHasMethod.php
+#gtIfClassHasMethodTest.php
+#gtIsSpecifiedFunctionOrMethod.php
+#gtIsSpecifiedFunctionOrMethodTest.php
+#gtIsSpecifiedTestType.php
+#gtIsSpecifiedTestTypeTest.php
+#gtIsValidClass.php
+#gtIsValidClassTest.php
+#gtIsValidFunction.php
+#gtIsValidFunctionTest.php
+#gtIsValidMethod.php
+#gtIsValidMethodTest.php
+#gtMethod.php
+#gtMethodTest.php
+#gtMissingArgumentException.php
+#gtMissingOptionsException.php
+#gtOptionalSections.php
+#gtOptionalSectionsTest.php
+#gtPackage.php
+#gtPreConditionList.php
+#gtPreCondition.php
+#gtTestCase.php
+#gtTestCaseWriter.php
+#gtTestSubject.php
+#gtText.php
+#gtUnknownOptionException.php
+#gtUnknownSectionException.php
+#gtVariationContainerFunction.php
+#gtVariationContainerMethod.php
+#gtVariationContainer.php
+#gtVariationTestCaseFunction.php
+#gtVariationTestCaseFunctionTest.php
+#gtVariationTestCaseMethod.php
+#gtVariationTestCaseMethodTest.php
+#gtVariationTestCase.php
+#html_table_gen.php
+#im.php
+#index.php
+#ini_groups.php
+#input_get_args.php
+#interopB.wsdl.php
+#interop.php
+#interop.wsdl.php
+#locale_api.php
+#makestub.php
+#micro_bench.php
+#milter.php
+#mkdist.php
+#msgfmt_api.php
+#mysql_users.php
+#nocvsdir.php
+#normalizer_api.php
+#note.php
+#odt.php
+#oldapi.php
+#pdo.php
+#pear2coverage.phar.php
+#phar_from_dir.php
+#phar.php
+#registersyslog.php
+#relaxNG.php
+#run-tests.php
+#search_underscores.php
+#security.php
+#server_round2_base.php
+#server_round2_groupB.php
+#server_round2_groupC.php
+#server-tests-config.php
+#server-tests.php
+#shipping.php
+#shortarc.php
+#skeleton.php
+#spl.php
+#test-pcntl.php
+#test.php
+#test.utility.php
+#tokenizer.php
+#too.php
+#tree.php
+#upgrade-pcre.php
+#urlgrab5.php
+#web-bootstrap.php
+#xmlreader_file.php
+#xmlreader_relaxNG.php
+#xmlreader_string.php
+#xmlreader_validatedtd.php
+#xmlwriter_file.php
+#xmlwriter_mem_ns.php
+#xmlwriter_mem.php
+#xmlwriter_oo.php
+#xpath.php
+#zend_vm_gen.php
 }
 
 # vim: ft=perl6

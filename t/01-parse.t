@@ -28,7 +28,7 @@ class bug39542 {
 my $g5 = PHP5::Grammar.new;
 my $g7 = PHP7::Grammar.new;
 
-ok $g5.parse( $sample-PHP5 );
-ok $g7.parse( $sample-PHP7 );
+ok $g5.parse( $sample-PHP5 ), 'php5 basic compile';
+ok $g7.parse( $sample-PHP7 ), 'php7 basic compile';
 
 # vim: ft=perl6
