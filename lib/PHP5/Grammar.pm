@@ -8,13 +8,15 @@ grammar PHP5::Grammar
 	token FUNCTION { 'function' }
 
 	token ECHO { 'echo' } # Only because the lack of parens after it.
+	token NEW { 'new' } # Same reason as 'echo'.
 
-	token CLASS-NAME { <[ a .. z 0 .. 9 ]>+ }
+	token CLASS-NAME { <[ a .. z A .. Z 0 .. 9 ]>+ }
 	token FUNCTION-NAME { <[ a .. z 0 .. 9 ]>+ }
 
 	token SCALAR { '$' <[ a .. z ]>+ }
 
-	token DQ-STRING { '"' <-[ " ]>* '"' }
+	token DQ-STRING { '"' <-[ " ]>* '"' } # Will need work later.
+	token SQ-STRING { '\'' <-[ ' ]>* '\'' } # Will need work later.
 
 	rule TOP
 		{
@@ -29,8 +31,8 @@ grammar PHP5::Grammar
 |
 # addglob.php
 		<PHP-START>
-		<SCALAR> '= new ZipArchive;
-$z->open(\'a.zip\', ZIPARCHIVE::CREATE);
+		<SCALAR> '=' <NEW> <CLASS-NAME> ';'
+		<SCALAR> '->' <FUNCTION-NAME> '(' <SQ-STRING> ',' 'ZIPARCHIVE::CREATE' ');
 
 /* or \'remove_all_path\' => 0*/
 $options = array(
