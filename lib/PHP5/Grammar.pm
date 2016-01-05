@@ -4,19 +4,23 @@ grammar PHP5::Grammar
 	token PHP-START { '<?php' }
 	token PHP-END { '?>' }
 
+	token ARRAY { 'array' }
+
 	token CLASS { 'class' }
 	token FUNCTION { 'function' }
 
 	token ECHO { 'echo' } # Only because the lack of parens after it.
 	token NEW { 'new' } # Same reason as 'echo'.
 
-	token CLASS-NAME { <[ a .. z A .. Z 0 .. 9 ]>+ }
+	token CLASS-NAME { ( <[ a .. z A .. Z 0 .. 9 ]>+ )+ %% '::' }
 	token FUNCTION-NAME { <[ a .. z 0 .. 9 ]>+ }
 
 	token SCALAR { '$' <[ a .. z ]>+ }
 
 	token DQ-STRING { '"' <-[ " ]>* '"' } # Will need work later.
 	token SQ-STRING { '\'' <-[ ' ]>* '\'' } # Will need work later.
+
+	token COMMENT { '/*' .*? '*/' }
 
 	rule TOP
 		{
@@ -32,13 +36,13 @@ grammar PHP5::Grammar
 # addglob.php
 		<PHP-START>
 		<SCALAR> '=' <NEW> <CLASS-NAME> ';'
-		<SCALAR> '->' <FUNCTION-NAME> '(' <SQ-STRING> ',' 'ZIPARCHIVE::CREATE' ');
+		<SCALAR> '->' <FUNCTION-NAME> '(' <SQ-STRING> ',' <CLASS-NAME> ')' ';'
 
-/* or \'remove_all_path\' => 0*/
-$options = array(
-	\'remove_path\' => \'/home/francis/myimages\',
-	\'add_path\' => \'images/\',
-);
+<COMMENT>
+		<SCALAR> '=' <ARRAY> '('
+	<SQ-STRING> '=>' <SQ-STRING> ','
+	<SQ-STRING> '=>' <SQ-STRING> ','
+');
 $found = $z->addGlob("/home/pierre/cvs/gd/libgd/tests/*.png", 0, $options);
 var_dump($found);
 $z->close();'
