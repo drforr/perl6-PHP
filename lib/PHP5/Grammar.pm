@@ -23,6 +23,28 @@ grammar PHP5::Grammar
 
 	token COMMENT { '/*' .*? '*/' }
 
+	rule argument-list
+		{ <SQ-STRING> ',' <CLASS-NAME>
+		| <DQ-STRING> ',' <DIGITS> ',' <SCALAR>
+		| <SCALAR>
+		}
+
+	rule function-call
+		{ <FUNCTION-NAME> '(' <argument-list>? ')'
+		}
+
+	rule method-call
+		{ <SCALAR> '->' <FUNCTION-NAME> '(' <argument-list>? ')'
+		}
+
+	rule constructor-call
+		{ <NEW> <CLASS-NAME>
+		}
+
+	rule pair
+		{ <SQ-STRING> '=>' <SQ-STRING>
+		}
+
 	rule TOP
 		{
 		<PHP-START>
@@ -36,17 +58,17 @@ grammar PHP5::Grammar
 |
 # addglob.php
 		<PHP-START>
-		<SCALAR> '=' <NEW> <CLASS-NAME> ';'
-		<SCALAR> '->' <FUNCTION-NAME> '(' <SQ-STRING> ',' <CLASS-NAME> ')' ';'
+		<SCALAR> '=' <constructor-call> ';'
+		<method-call> ';'
 
 <COMMENT>
 		<SCALAR> '=' <ARRAY> '('
-			<SQ-STRING> '=>' <SQ-STRING> ','
-			<SQ-STRING> '=>' <SQ-STRING> ','
+			<pair> ','
+			<pair> ','
 		')' ';'
-		<SCALAR> '=' <SCALAR> '->' <FUNCTION-NAME> '(' <DQ-STRING> ',' <DIGITS> ',' <SCALAR> ')' ';'
-		<FUNCTION-NAME> '(' <SCALAR> ')' ';'
-		<SCALAR> '->' <FUNCTION-NAME> '(' ')' ';'
+		<SCALAR> '=' <method-call> ';'
+		<function-call> ';'
+		<method-call> ';'
 
 		}
 	}
