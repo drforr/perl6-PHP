@@ -26,6 +26,7 @@ grammar PHP5::Grammar
 	rule argument-list
 		{ <SQ-STRING> ',' <CLASS-NAME>
 		| <DQ-STRING> ',' <DIGITS> ',' <SCALAR>
+		| <DQ-STRING> ',' <DQ-STRING> ',' <SCALAR>
 		| <SCALAR>
 		}
 
@@ -67,6 +68,21 @@ grammar PHP5::Grammar
 			<pair> ','
 		')' ';'
 		<SCALAR> '=' <method-call> ';'
+		<function-call> ';'
+		<method-call> ';'
+
+|
+# addpattern.php
+		<PHP-START>
+		<SCALAR> '=' <constructor-call> ';'
+		<method-call> ';'
+
+		<COMMENT>
+		<SCALAR> '=' <ARRAY> '('
+			<pair> ','
+			<pair> ','
+		')' ';'
+		<method-call> ';'
 		<function-call> ';'
 		<method-call> ';'
 

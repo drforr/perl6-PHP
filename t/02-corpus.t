@@ -10,6 +10,7 @@ subtest sub {
   my $g = PHP5::Grammar.new;
 
   ok $g.parsefile( 'corpus-v5/addglob.php' ), 'addglob.php';
+  ok $g.parsefile( 'corpus-v5/addpattern.php' ), 'addpattern.php';
 
 #addpattern.php
 #a.php
