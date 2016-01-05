@@ -13,8 +13,9 @@ grammar PHP5::Grammar
 	token NEW { 'new' } # Same reason as 'echo'.
 
 	token CLASS-NAME { ( <[ a .. z A .. Z 0 .. 9 ]>+ )+ %% '::' }
-	token FUNCTION-NAME { <[ a .. z 0 .. 9 ]>+ }
+	token FUNCTION-NAME { <[ a .. z A .. Z _ 0 .. 9 ]>+ }
 
+	token DIGITS { <[ 0 .. 9 ]>+ }
 	token SCALAR { '$' <[ a .. z ]>+ }
 
 	token DQ-STRING { '"' <-[ " ]>* '"' } # Will need work later.
@@ -40,12 +41,12 @@ grammar PHP5::Grammar
 
 <COMMENT>
 		<SCALAR> '=' <ARRAY> '('
-	<SQ-STRING> '=>' <SQ-STRING> ','
-	<SQ-STRING> '=>' <SQ-STRING> ','
-');
-$found = $z->addGlob("/home/pierre/cvs/gd/libgd/tests/*.png", 0, $options);
-var_dump($found);
-$z->close();'
+			<SQ-STRING> '=>' <SQ-STRING> ','
+			<SQ-STRING> '=>' <SQ-STRING> ','
+		')' ';'
+		<SCALAR> '=' <SCALAR> '->' <FUNCTION-NAME> '(' <DQ-STRING> ',' <DIGITS> ',' <SCALAR> ')' ';'
+		<FUNCTION-NAME> '(' <SCALAR> ')' ';'
+		<SCALAR> '->' <FUNCTION-NAME> '(' ')' ';'
 
 		}
 	}
