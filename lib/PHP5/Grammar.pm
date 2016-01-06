@@ -33,6 +33,7 @@ grammar PHP5::Grammar
 	token MACRO-NAME { '__' <[ A .. Z ]>+ '__' }
 
 	token DIGITS { <[ 0 .. 9 ]>+ }
+	token FLOATING-POINT { <[ 0 .. 9 ]>+ '.' <[ 0 .. 9 ]>+ }
 	token SCALAR { '$' <[ a .. z A .. Z ]> <[ a .. z A .. Z 0 .. 9 ]>* }
 
 	token DQ-STRING { '"' <-[ " ]>* '"' } # Will need work later.
@@ -100,6 +101,7 @@ grammar PHP5::Grammar
 		| <SCALAR> '=' <function-call>
 		| <SCALAR> '=' <DQ-STRING>
 		| <SCALAR> '=' <SCALAR>
+		| <SCALAR> '=' <FLOATING-POINT>
 		| <SCALAR> '=' <DIGITS>
 		}
 
@@ -115,6 +117,9 @@ grammar PHP5::Grammar
 
 	rule postincrement-expression
 		{ <SCALAR> '++'
+		}
+	rule postdecrement-expression
+		{ <SCALAR> '--'
 		}
 
 
@@ -143,20 +148,21 @@ rule return-expression
 	rule line
 		{ <statements>
 		| <COMMENT>
+		| <for-expression> <statement> ';'
 		}
 
 	rule lines
 		{ <line>+
 		}
 
-	rule for-expression-no-block
+	rule for-expression
 		{
 		<FOR>	'('
 			<assignment-expression> ';'
 			<comparison-expression> ';'
-			<postincrement-expression>
+			( <postincrement-expression>
+			| <postdecrement-expression> )
 			')'
-			<statement>
 		}
 
 	rule function-declaration
@@ -201,17 +207,12 @@ rule return-expression
 	<lines>
 '}'
 
-<FUNCTION> <FUNCTION-NAME> '(' ')' '{'
-	<lines>
-	<for-expression-no-block> ';'
-	<lines>
-	<for-expression-no-block> ';'
-'}'
+<function-declaration>
 
 <COMMENT>
 
 <FUNCTION> 'simplecall() {'
-	<for-expression-no-block> ';'
+	<for-expression> <statement> ';'
 '}'
 
 <COMMENT>
@@ -219,14 +220,13 @@ rule return-expression
 <function-declaration>
 
 <FUNCTION> 'simpleucall() {'
-<for-expression-no-block> ';'
+	<for-expression> <statement> ';'
 '}'
 
 <lines>
 
 <FUNCTION> 'simpleudcall() {'
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
-	<statement> ';'
+	<for-expression> <statement> ';'
 '}'
 
 <function-declaration>
@@ -235,9 +235,7 @@ rule return-expression
 
 <FUNCTION> 'mandel() {'
 <lines>
-  '$recen=-.45;
-  $imcen=0.0;
-  $r=0.7;'
+  '$recen=-.45;'
 <lines>
   '$s=2*$r/$w1;'
 <lines>
@@ -270,7 +268,7 @@ rule return-expression
 
 <FUNCTION> 'mandel2() {'
   <lines>
-  <FOR> '(' <assignment-expression> '; printf("\n"), $C = $y*0.1 - 1.5, $y--;){'
+  <FOR> '(' <assignment-expression> '; printf("\n"), $C = $y*0.1 - 1.5,' <postdecrement-expression> ';' '){'
     <FOR> '($x=0; $c = $x*0.04 - 2, $z=0, $Z=0,' <postincrement-expression> '< 75;){'
       <FOR> '($r=$c, $i=$C, $k=0; $t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000;' <postincrement-expression> ')'
         <IF> '($z*$z + $Z*$Z > 500000) break;'
@@ -287,18 +285,18 @@ rule return-expression
   <RETURN> 'Ack($m - 1, Ack($m, ($n - 1)));
 }'
 
-<FUNCTION> 'ackermann($n) {
-  $r = Ack(3,$n);'
+<FUNCTION> 'ackermann($n) {'
+<lines>
   <PRINT> <DQ-STRING> ';'
 '}'
 
 <COMMENT>
 
 <FUNCTION> 'ary($n) {'
-  <FOR> '($i=0; $i<$n;' <postincrement-expression> ') {
-    $X[$i] = $i;
+<for-expression> '{'
+    '$X[$i] = $i;
   }'
-  <FOR> '($i=$n-1;' <comparison-expression> ';' '$i--) {
+  <FOR> '($i=$n-1;' <comparison-expression> ';' <postdecrement-expression> ')' '{
     $Y[$i] = $X[$i];
   }
   $last = $n-1;'
@@ -341,12 +339,12 @@ rule return-expression
 <COMMENT>
 
 <FUNCTION> 'ary3($n) {'
-  <FOR> '($i=0; $i<$n;' <postincrement-expression> ') {
-    $X[$i] = $i + 1;
+<for-expression> '{'
+    '$X[$i] = $i + 1;
     $Y[$i] = 0;
   }'
-  <FOR> '($k=0; $k<1000;' <postincrement-expression> ') {'
-    <FOR> '($i=$n-1;' <comparison-expression> '; $i--) {
+<for-expression> '{'
+    <FOR> '($i=$n-1;' <comparison-expression> ';' <postdecrement-expression> ')' '{
       $Y[$i] += $X[$i];
     }
   }
@@ -360,19 +358,19 @@ rule return-expression
     <RETURN> '((' <comparison-expression> ') ? 1 : fibo_r($n - 2) + fibo_r($n - 1));
 }'
 
-<FUNCTION> 'fibo($n) {
-  $r = fibo_r($n);'
-  <PRINT> '"$r\n";
-}'
+<FUNCTION> 'fibo($n) {'
+<lines>
+  <PRINT> <DQ-STRING> ';'
+'}'
 
 <COMMENT>
 
 <FUNCTION> 'hash1($n) {'
-  <FOR> '($i = 1;' <comparison-expression> ';' <postincrement-expression> ') {
-    $X[dechex($i)] = $i;
+<for-expression> '{'
+    '$X[dechex($i)] = $i;
   }
   $c = 0;'
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i--) {'
+<for-expression> '{'
     <IF> '($X[dechex($i)]) {' <postincrement-expression> ';' '}'
   '}'
   <PRINT> '"$c\n";
@@ -381,11 +379,11 @@ rule return-expression
 <COMMENT>
 
 <FUNCTION> 'hash2($n) {'
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i++) {
-    $hash1["foo_$i"] = $i;
+<for-expression> '{'
+    '$hash1["foo_$i"] = $i;
     $hash2["foo_$i"] = 0;
   }'
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i--) {'
+<for-expression> '{'
     <FOREACH> '($hash1 as $key => $value) $hash2[$key] += $value;
   }'
 <lines>
@@ -433,15 +431,9 @@ rule return-expression
 }'
 
 <FUNCTION> 'heapsort($N) {'
-<global-expression> ';'
-
-<function-call> ';'
-<function-call> ';'
-<function-call> ';'
-
 <lines>
-  <FOR> '($i=1;' <comparison-expression> '; $i++) {
-    $ary[$i] = gen_random(1);
+<for-expression> '{'
+    '$ary[$i] = gen_random(1);
   }'
 <lines>
   'printf("%.10f\n", $ary[$N]);
@@ -451,9 +443,9 @@ rule return-expression
 
 <FUNCTION> <FUNCTION-NAME> '($rows, $cols) {'
 <lines>
-    <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <SCALAR> '++) {'
-	<FOR> '($j=0; $j<$cols; $j++) {
-	    $mx[$i][$j] = $count++;
+<for-expression> '{'
+  <for-expression> '{'
+	    '$mx[$i][$j] = $count++;
 	}
     }'
     <RETURN> '($mx);
@@ -461,11 +453,11 @@ rule return-expression
 
 <FUNCTION> 'mmult ($rows, $cols, $m1, $m2) {'
 <lines>
-    <FOR> '($i=0; $i<$rows; $i++) {'
-	<FOR> '($j=0; $j<$cols; $j++) {'
-	    <assignment-expression> ';'
-	    <FOR> '(' <assignment-expression> '; $k<$cols; $k++) {
-		$x += $m1[$i][$k] * $m2[$k][$j];
+<for-expression> '{'
+  <for-expression> '{'
+    <lines>
+	    <for-expression> '{'
+		'$x += $m1[$i][$k] * $m2[$k][$j];
 	    }
 	    $m3[$i][$j] = $x;
 	}
@@ -485,13 +477,12 @@ rule return-expression
 
 <FUNCTION> 'nestedloop($n) {'
 <lines>
-  <FOR> '($a=0; $a<$n; $a++)'
-    <FOR> '($b=0; $b<$n; $b++)'
-      <FOR> '($c=0; $c<$n; $c++)'
-        <FOR> '($d=0; $d<$n; $d++)'
-          <FOR> '($e=0; $e<$n; $e++)'
-            <FOR> '($f=0; $f<$n; $f++)
-             $x++;'
+<for-expression>
+  <for-expression>
+    <for-expression>
+      <for-expression>
+        <for-expression>
+          <for-expression> <statement> ';'
   <PRINT> '"$x\n";
 }'
 
@@ -501,7 +492,7 @@ rule return-expression
 <lines>
   <WHILE> '($n-- > 0) {'
 <lines>
-    <FOR> '($i=2; $i<8193; $i++) {'
+    <for-expression> '{'
       <IF> '($flags[$i] > 0) {'
         <FOR> '($k=$i+$i;' <comparison-expression> '; $k+=$i) {
           $flags[$k] = 0;
@@ -510,8 +501,8 @@ rule return-expression
       '}'
     '}'
   '}'
-  <PRINT> '"Count: $count\n";
-}'
+  <PRINT> <DQ-STRING> ';'
+'}'
 
 <COMMENT>
 
@@ -521,8 +512,8 @@ rule return-expression
     $str .= "hello\n";
   }'
   <lines>
-  <PRINT> '"$len\n";
-}'
+  <PRINT> <DQ-STRING> ';'
+'}'
 
 <COMMENT>
 
@@ -548,13 +539,13 @@ rule return-expression
 <FUNCTION> 'total()
 {'
 <lines>
-  <ECHO> '$pad."\n";'
+  <ECHO> '$pad.' <DQ-STRING> ';'
 <lines>
   '$pad = str_repeat(" ", 24-strlen("Total")-strlen($num));'
   <ECHO> '"Total".$pad.$num."\n";
 }
 
-$t0 = $t = start_test();'
+$t0 =' <assignment-expression> ';'
 <lines>
 <PHP-END>
 		}
