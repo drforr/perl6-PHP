@@ -76,7 +76,7 @@ grammar PHP5::Grammar
 		{ <NEW> <CLASS-NAME>
 		}
 
-	rule global-call
+	rule global-expression
 		{ <GLOBAL> <SCALAR>
 		}
 
@@ -118,16 +118,22 @@ grammar PHP5::Grammar
 		}
 
 
-	rule echo-expression
-		{ <ECHO> <DQ-STRING>
-		}
+rule echo-expression
+	{ <ECHO> <DQ-STRING>
+	}
+rule return-expression
+	{ <RETURN> <function-call>
+	}
 
 	rule statement
 		{ <assignment-expression>
 | <echo-expression>
+| <return-expression>
+| <global-expression>
 		| <postincrement-expression>
 		| <method-call>
 		| <function-call>
+		| <array-call>
 		}
 
 	rule statements
@@ -174,8 +180,7 @@ grammar PHP5::Grammar
 				<ECHO> <MACRO-NAME> '.' <DQ-STRING> ';'
 			'}'
 
-			<STATIC> <PUBLIC> <FUNCTION> <FUNCTION-NAME> <parameters> '{'
-			'}'
+			<STATIC> <PUBLIC> <function-declaration>
 		'}'
 
 |
@@ -188,17 +193,17 @@ grammar PHP5::Grammar
 
 <FUNCTION> <FUNCTION-NAME> '(' ')' '{'
 	<lines>
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <SCALAR> '++' ')'
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
 	<lines>
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $thisisalongname++) 
-    $thisisanotherlongname++;
-}'
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
+<statement> ';'
+'}'
 
 <COMMENT>
 
 <FUNCTION> 'simplecall() {'
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i++)'
-	<lines>
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
+	<statement> ';'
 '}'
 
 <COMMENT>
@@ -207,15 +212,15 @@ grammar PHP5::Grammar
 }'
 
 <FUNCTION> 'simpleucall() {'
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i++)'
-	<lines>
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
+	<statement> ';'
 '}'
 
 <lines>
 
 <FUNCTION> 'simpleudcall() {'
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i++)'
-	<lines>
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
+	<statement> ';'
 '}'
 
 <function-declaration>
@@ -260,8 +265,8 @@ grammar PHP5::Grammar
 <FUNCTION> 'mandel2() {'
   <lines>
   <FOR> '(' <assignment-expression> '; printf("\n"), $C = $y*0.1 - 1.5, $y--;){'
-    <FOR> '($x=0; $c = $x*0.04 - 2, $z=0, $Z=0, $x++ < 75;){'
-      <FOR> '($r=$c, $i=$C, $k=0; $t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000; $k++)'
+    <FOR> '($x=0; $c = $x*0.04 - 2, $z=0, $Z=0,' <postincrement-expression> '< 75;){'
+      <FOR> '($r=$c, $i=$C, $k=0; $t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000;' <postincrement-expression> ')'
         <IF> '($z*$z + $Z*$Z > 500000) break;'
       <ECHO> '$b[$k%16];
     }
@@ -284,7 +289,7 @@ grammar PHP5::Grammar
 <COMMENT>
 
 <FUNCTION> 'ary($n) {'
-  <FOR> '($i=0; $i<$n; $i++) {
+  <FOR> '($i=0; $i<$n;' <postincrement-expression> ') {
     $X[$i] = $i;
   }'
   <FOR> '($i=$n-1;' <comparison-expression> ';' '$i--) {
@@ -330,11 +335,11 @@ grammar PHP5::Grammar
 <COMMENT>
 
 <FUNCTION> 'ary3($n) {'
-  <FOR> '($i=0; $i<$n; $i++) {
+  <FOR> '($i=0; $i<$n;' <postincrement-expression> ') {
     $X[$i] = $i + 1;
     $Y[$i] = 0;
   }'
-  <FOR> '($k=0; $k<1000; $k++) {'
+  <FOR> '($k=0; $k<1000;' <postincrement-expression> ') {'
     <FOR> '($i=$n-1;' <comparison-expression> '; $i--) {
       $Y[$i] += $X[$i];
     }
@@ -357,13 +362,13 @@ grammar PHP5::Grammar
 <COMMENT>
 
 <FUNCTION> 'hash1($n) {'
-  <FOR> '($i = 1;' <comparison-expression> '; $i++) {
+  <FOR> '($i = 1;' <comparison-expression> ';' <postincrement-expression> ') {
     $X[dechex($i)] = $i;
   }
   $c = 0;'
   <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i--) {'
-    <IF> '($X[dechex($i)]) { $c++; }
-  }'
+    <IF> '($X[dechex($i)]) {' <postincrement-expression> ';' '}'
+  '}'
   <PRINT> '"$c\n";
 }'
 
@@ -376,22 +381,22 @@ grammar PHP5::Grammar
   }'
   <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i--) {'
     <FOREACH> '($hash1 as $key => $value) $hash2[$key] += $value;
-  }
-  $first = "foo_0";
-  $last  = "foo_".($n-1);'
+  }'
+<lines>
+  '$last  = "foo_".($n-1);'
   <PRINT> '"$hash1[$first] $hash1[$last] $hash2[$first] $hash2[$last]\n";
 }'
 
 <COMMENT>
 
 <FUNCTION> 'gen_random ($n) {'
-<global-call> ';'
+<lines>
     <RETURN> '( ($n * ($LAST = ($LAST * IA + IC) % IM)) / IM );
 }'
 
 <FUNCTION> 'heapsort_r($n, &$ra) {
-    $l = ($n >> 1) + 1;
-    $ir = $n;'
+    $l = ($n >> 1) + 1;'
+    <lines>
 
     <WHILE> '(1) {'
 	<IF> '(' <comparison-expression> ') {
@@ -422,25 +427,24 @@ grammar PHP5::Grammar
 }'
 
 <FUNCTION> 'heapsort($N) {'
-<global-call> ';'
+<global-expression> ';'
 
 <function-call> ';'
 <function-call> ';'
 <function-call> ';'
 
-<assignment-expression> ';'
+<lines>
   <FOR> '($i=1;' <comparison-expression> '; $i++) {
     $ary[$i] = gen_random(1);
   }'
-<function-call> ';'
+<lines>
   'printf("%.10f\n", $ary[$N]);
 }'
 
 <COMMENT>
 
 <FUNCTION> <FUNCTION-NAME> '($rows, $cols) {'
-<assignment-expression> ';'
-    '$mx =' <array-call> ';'
+<lines>
     <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <SCALAR> '++) {'
 	<FOR> '($j=0; $j<$cols; $j++) {
 	    $mx[$i][$j] = $count++;
@@ -449,8 +453,8 @@ grammar PHP5::Grammar
     <RETURN> '($mx);
 }'
 
-<FUNCTION> 'mmult ($rows, $cols, $m1, $m2) {
-    $m3 =' <array-call> ';'
+<FUNCTION> 'mmult ($rows, $cols, $m1, $m2) {'
+<lines>
     <FOR> '($i=0; $i<$rows; $i++) {'
 	<FOR> '($j=0; $j<$cols; $j++) {'
 	    <assignment-expression> ';'
@@ -460,23 +464,21 @@ grammar PHP5::Grammar
 	    $m3[$i][$j] = $x;
 	}
     }'
-<function-call> ';'
+<lines>
 '}'
 
-<FUNCTION> 'matrix($n) {
-  $SIZE = 30;
-  $m1 = mkmatrix($SIZE, $SIZE);
-  $m2 = mkmatrix($SIZE, $SIZE);'
-  <WHILE> '($n--) {
-    $mm = mmult($SIZE, $SIZE, $m1, $m2);
-  }'
-  <PRINT> '"{$mm[0][0]} {$mm[2][3]} {$mm[3][2]} {$mm[4][4]}\n";
-}'
+<FUNCTION> 'matrix($n) {'
+<lines>
+  <WHILE> '($n--) {'
+<lines>
+  '}'
+  <PRINT> <DQ-STRING> ';'
+'}'
 
 <COMMENT>
 
-<FUNCTION> 'nestedloop($n) {
-  $x = 0;'
+<FUNCTION> 'nestedloop($n) {'
+<lines>
   <FOR> '($a=0; $a<$n; $a++)'
     <FOR> '($b=0; $b<$n; $b++)'
       <FOR> '($c=0; $c<$n; $c++)'
@@ -489,20 +491,19 @@ grammar PHP5::Grammar
 
 <COMMENT>
 
-<FUNCTION> <FUNCTION-NAME> '($n) {
-  $count = 0;'
-  <WHILE> '($n-- > 0) {
-    $count = 0;
-    $flags = range (0,8192);'
+<FUNCTION> <FUNCTION-NAME> '($n) {'
+<lines>
+  <WHILE> '($n-- > 0) {'
+<lines>
     <FOR> '($i=2; $i<8193; $i++) {'
       <IF> '($flags[$i] > 0) {'
         <FOR> '($k=$i+$i;' <comparison-expression> '; $k+=$i) {
           $flags[$k] = 0;
-        }
-        $count++;
-      }
-    }
-  }'
+        }'
+<lines>
+      '}'
+    '}'
+  '}'
   <PRINT> '"Count: $count\n";
 }'
 
@@ -525,32 +526,25 @@ grammar PHP5::Grammar
   <RETURN> '($t[\'sec\'] + $t[\'usec\'] / 1000000);
 }'
 
-<FUNCTION> 'start_test()
-{'
-<lines>
-  <RETURN> 'getmicrotime();
-}'
+<function-declaration>
 
 <FUNCTION> 'end_test($start, $name)
 {'
-<global-call> ';'
 <lines>
   '$total += $end-$start;
   $num = number_format($end-$start,3);
   $pad = str_repeat(" ", 24-strlen($name)-strlen($num));'
 
-  <ECHO> '$name.$pad.$num."\n";
-	ob_start();'
-  <RETURN> 'getmicrotime();
-}'
+  <ECHO> '$name.$pad.$num."\n";'
+<lines>
+'}'
 
 <FUNCTION> 'total()
 {'
-<global-call> ';'
 <lines>
-  <ECHO> '$pad."\n";
-  $num = number_format($total,3);
-  $pad = str_repeat(" ", 24-strlen("Total")-strlen($num));'
+  <ECHO> '$pad."\n";'
+<lines>
+  '$pad = str_repeat(" ", 24-strlen("Total")-strlen($num));'
   <ECHO> '"Total".$pad.$num."\n";
 }
 
