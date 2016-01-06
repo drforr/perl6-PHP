@@ -149,6 +149,16 @@ rule return-expression
 		{ <line>+
 		}
 
+	rule for-expression-no-block
+		{
+		<FOR>	'('
+			<assignment-expression> ';'
+			<comparison-expression> ';'
+			<postincrement-expression>
+			')'
+			<statement>
+		}
+
 	rule function-declaration
 		{
 		<FUNCTION> <FUNCTION-NAME> <parameter-list>
@@ -193,27 +203,23 @@ rule return-expression
 
 <FUNCTION> <FUNCTION-NAME> '(' ')' '{'
 	<lines>
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
+	<for-expression-no-block> ';'
 	<lines>
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
-<statement> ';'
+	<for-expression-no-block> ';'
 '}'
 
 <COMMENT>
 
 <FUNCTION> 'simplecall() {'
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
-	<statement> ';'
+	<for-expression-no-block> ';'
 '}'
 
 <COMMENT>
 
-<FUNCTION> <FUNCTION-NAME> '($a) {
-}'
+<function-declaration>
 
 <FUNCTION> 'simpleucall() {'
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <postincrement-expression> ')'
-	<statement> ';'
+<for-expression-no-block> ';'
 '}'
 
 <lines>
