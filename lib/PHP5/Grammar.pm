@@ -25,6 +25,7 @@ grammar PHP5::Grammar
 	token ECHO { 'echo' } # Only because the lack of parens after it.
 	token NEW { 'new' } # Same reason as 'echo'.
 	token PRINT { 'print' } # Same reason as 'echo'.
+	token RETURN { 'return' } # Same reason as 'echo'
 
 	token CLASS-NAME { ( <[ a .. z A .. Z 0 .. 9 ]>+ )+ %% '::' }
 	token FUNCTION-NAME { <[ a .. z A .. Z _ 0 .. 9 ]>+ }
@@ -37,7 +38,10 @@ grammar PHP5::Grammar
 	token DQ-STRING { '"' <-[ " ]>* '"' } # Will need work later.
 	token SQ-STRING { '\'' <-[ ' ]>* '\'' } # Will need work later.
 
-	token COMMENT { '/*' .*? '*/' }
+	token COMMENT
+		{ '/*' .*? '*/'
+		| '//' .*? \n
+		}
 
 	rule argument
 		{ <SQ-STRING>
@@ -48,8 +52,8 @@ grammar PHP5::Grammar
 		}
 
 	rule parameter
-		{
-		<SCALAR> '=' <CONSTANT-NAME>
+		{ <SCALAR> '=' <CONSTANT-NAME>
+		| <SCALAR>
 		}
 
 	rule function-call
@@ -99,12 +103,28 @@ grammar PHP5::Grammar
 		| <SCALAR> '=' <DIGITS>
 		}
 
+	rule comparison-expression
+		{ <SCALAR> '<' <SCALAR>
+		| <SCALAR> '<=' <SCALAR>
+		| <SCALAR> '<=' <DIGITS>
+		| <SCALAR> '<' <DIGITS>
+		| <SCALAR> '>' <DIGITS>
+		| <SCALAR> '>=' <DIGITS>
+		| <SCALAR> '==' <DIGITS>
+		}
+
 	rule postincrement-expression
 		{ <SCALAR> '++'
 		}
 
+
+	rule echo-expression
+		{ <ECHO> <DQ-STRING>
+		}
+
 	rule statement
 		{ <assignment-expression>
+| <echo-expression>
 		| <postincrement-expression>
 		| <method-call>
 		| <function-call>
@@ -123,13 +143,19 @@ grammar PHP5::Grammar
 		{ <line>+
 		}
 
+	rule function-declaration
+		{
+		<FUNCTION> <FUNCTION-NAME> <parameter-list>
+			'{'
+			<lines>?
+			'}'
+		}
+
 	rule TOP
 		{
 		<PHP-START>
 		<CLASS> <CLASS-NAME> '{'
-			<FUNCTION> <FUNCTION-NAME> <parameter-list> '{'
-				<ECHO> <DQ-STRING> ';'
-			'}'
+			<function-declaration>
 		'}'
 		<PHP-END>
 
@@ -156,22 +182,22 @@ grammar PHP5::Grammar
 
 # corpus-5/bench.php
 <PHP-START>
-<IF> '(function_exists("date_default_timezone_set")) {'
+<IF> '(' <function-call> ')' '{'
 	<lines>
 '}'
 
 <FUNCTION> <FUNCTION-NAME> '(' ')' '{'
 	<lines>
-  <FOR> '(' <assignment-expression> ';' <SCALAR> '<' <DIGITS> ';' <SCALAR> '++' ')'
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <SCALAR> '++' ')'
 	<lines>
-  <FOR> '(' <assignment-expression> '; $thisisalongname < 1000000; $thisisalongname++) 
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $thisisalongname++) 
     $thisisanotherlongname++;
 }'
 
 <COMMENT>
 
 <FUNCTION> 'simplecall() {'
-  <FOR> '(' <assignment-expression> '; $i < 1000000; $i++)'
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i++)'
 	<lines>
 '}'
 
@@ -181,21 +207,20 @@ grammar PHP5::Grammar
 }'
 
 <FUNCTION> 'simpleucall() {'
-  <FOR> '(' <assignment-expression> '; $i < 1000000; $i++)'
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i++)'
 	<lines>
 '}'
 
-<COMMENT>
+<lines>
 
 <FUNCTION> 'simpleudcall() {'
-  <FOR> '(' <assignment-expression> '; $i < 1000000; $i++)'
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i++)'
 	<lines>
 '}'
 
-<FUNCTION> <FUNCTION-NAME> '($a) {
-}'
+<function-declaration>
 
-<COMMENT>
+<lines>
 
 <FUNCTION> 'mandel() {'
 <lines>
@@ -205,9 +230,9 @@ grammar PHP5::Grammar
 <lines>
   '$s=2*$r/$w1;'
 <lines>
-  <FOR> '(' <assignment-expression> ';' '$y<=$w1; $y=$y+1) {
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $y=$y+1) {
     $imc=$s*($y-$h2)+$imcen;'
-    <FOR> '($x=0 ; $x<=$h1; $x=$x+1) {
+    <FOR> '($x=0 ;' <comparison-expression> '; $x=$x+1) {
       $rec=$s*($x-$w2)+$recen;'
 <lines>
       '$re2=$re*$re;
@@ -219,23 +244,22 @@ grammar PHP5::Grammar
         $im2=$im*$im;
         $color=$color-1;
       }'
-      <IF> '( $color==0 ) {'
+      <IF> '(' <comparison-expression> ') {'
         <PRINT> '"_";
       }' <ELSE> '{'
-        <PRINT> '"#";
-      }
-    }'
-    <PRINT> '"<br>";
-    flush();
-  }
+        <PRINT> <DQ-STRING> ';'
+      '}'
+    '}'
+    <PRINT> <DQ-STRING> ';'
+    <lines>
+  '}
 }'
 
 <COMMENT>
 
-<FUNCTION> 'mandel2() {
-  $b = " .:,;!/>)|&IH%*#";
-  //float r, i, z, Z, t, c, C;'
-  <FOR> '($y=30; printf("\n"), $C = $y*0.1 - 1.5, $y--;){'
+<FUNCTION> 'mandel2() {'
+  <lines>
+  <FOR> '(' <assignment-expression> '; printf("\n"), $C = $y*0.1 - 1.5, $y--;){'
     <FOR> '($x=0; $c = $x*0.04 - 2, $z=0, $Z=0, $x++ < 75;){'
       <FOR> '($r=$c, $i=$C, $k=0; $t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000; $k++)'
         <IF> '($z*$z + $Z*$Z > 500000) break;'
@@ -247,15 +271,15 @@ grammar PHP5::Grammar
 <COMMENT>
 
 <FUNCTION> 'Ack($m, $n){'
-  <IF> '($m == 0) return $n+1;'
-  <IF> '($n == 0) return Ack($m-1, 1);
-  return Ack($m - 1, Ack($m, ($n - 1)));
+  <IF> '(' <comparison-expression> ')' <RETURN> '$n+1;'
+  <IF> '(' <comparison-expression> ')' <RETURN> 'Ack($m-1, 1);'
+  <RETURN> 'Ack($m - 1, Ack($m, ($n - 1)));
 }'
 
 <FUNCTION> 'ackermann($n) {
   $r = Ack(3,$n);'
-  <PRINT> '"Ack(3,$n): $r\n";
-}'
+  <PRINT> <DQ-STRING> ';'
+'}'
 
 <COMMENT>
 
@@ -263,12 +287,12 @@ grammar PHP5::Grammar
   <FOR> '($i=0; $i<$n; $i++) {
     $X[$i] = $i;
   }'
-  <FOR> '($i=$n-1; $i>=0; $i--) {
+  <FOR> '($i=$n-1;' <comparison-expression> ';' '$i--) {
     $Y[$i] = $X[$i];
   }
   $last = $n-1;'
-  <PRINT> '"$Y[$last]\n";
-}'
+  <PRINT> <DQ-STRING> ';'
+'}'
 
 <COMMENT>
 
@@ -286,7 +310,7 @@ grammar PHP5::Grammar
     $X[$i] = $i; ++$i;
     $X[$i] = $i; ++$i;
   }'
-  <FOR> '($i=$n-1; $i>=0;) {
+  <FOR> '($i=$n-1;' <comparison-expression> ';) {
     $Y[$i] = $X[$i]; --$i;
     $Y[$i] = $X[$i]; --$i;
     $Y[$i] = $X[$i]; --$i;
@@ -311,7 +335,7 @@ grammar PHP5::Grammar
     $Y[$i] = 0;
   }'
   <FOR> '($k=0; $k<1000; $k++) {'
-    <FOR> '($i=$n-1; $i>=0; $i--) {
+    <FOR> '($i=$n-1;' <comparison-expression> '; $i--) {
       $Y[$i] += $X[$i];
     }
   }
@@ -321,8 +345,8 @@ grammar PHP5::Grammar
 
 <COMMENT>
 
-<FUNCTION> 'fibo_r($n){
-    return(($n < 2) ? 1 : fibo_r($n - 2) + fibo_r($n - 1));
+<FUNCTION> 'fibo_r($n){'
+    <RETURN> '((' <comparison-expression> ') ? 1 : fibo_r($n - 2) + fibo_r($n - 1));
 }'
 
 <FUNCTION> 'fibo($n) {
@@ -333,11 +357,11 @@ grammar PHP5::Grammar
 <COMMENT>
 
 <FUNCTION> 'hash1($n) {'
-  <FOR> '($i = 1; $i <= $n; $i++) {
+  <FOR> '($i = 1;' <comparison-expression> '; $i++) {
     $X[dechex($i)] = $i;
   }
   $c = 0;'
-  <FOR> '($i = $n; $i > 0; $i--) {'
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i--) {'
     <IF> '($X[dechex($i)]) { $c++; }
   }'
   <PRINT> '"$c\n";
@@ -346,11 +370,11 @@ grammar PHP5::Grammar
 <COMMENT>
 
 <FUNCTION> 'hash2($n) {'
-  <FOR> '($i = 0; $i < $n; $i++) {
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i++) {
     $hash1["foo_$i"] = $i;
     $hash2["foo_$i"] = 0;
   }'
-  <FOR> '($i = $n; $i > 0; $i--) {'
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $i--) {'
     <FOREACH> '($hash1 as $key => $value) $hash2[$key] += $value;
   }
   $first = "foo_0";
@@ -362,7 +386,7 @@ grammar PHP5::Grammar
 
 <FUNCTION> 'gen_random ($n) {'
 <global-call> ';'
-    'return( ($n * ($LAST = ($LAST * IA + IC) % IM)) / IM );
+    <RETURN> '( ($n * ($LAST = ($LAST * IA + IC) % IM)) / IM );
 }'
 
 <FUNCTION> 'heapsort_r($n, &$ra) {
@@ -370,22 +394,22 @@ grammar PHP5::Grammar
     $ir = $n;'
 
     <WHILE> '(1) {'
-	<IF> '($l > 1) {
+	<IF> '(' <comparison-expression> ') {
 	    $rra = $ra[--$l];
 	}' <ELSE> '{
 	    $rra = $ra[$ir];
 	    $ra[$ir] = $ra[1];'
 	    <IF> '(--$ir == 1) {
-		$ra[1] = $rra;
-		return;
-	    }
-	}
-	$i = $l;
-	$j = $l << 1;'
-	<WHILE> '($j <= $ir) {'
-	    <IF> '(($j < $ir) && ($ra[$j] < $ra[$j+1])) {
-		$j++;
-	    }'
+		$ra[1] = $rra;'
+		<RETURN> ';'
+	    '}'
+	'}'
+	<lines>
+	'$j = $l << 1;'
+	<WHILE> '(' <comparison-expression> ') {'
+	    <IF> '((' <comparison-expression> ') && ($ra[$j] < $ra[$j+1])) {'
+		<lines>
+	    '}'
 	    <IF> '($rra < $ra[$j]) {
 		$ra[$i] = $ra[$j];
 		$j += ($i = $j);
@@ -405,7 +429,7 @@ grammar PHP5::Grammar
 <function-call> ';'
 
 <assignment-expression> ';'
-  <FOR> '($i=1; $i<=$N; $i++) {
+  <FOR> '($i=1;' <comparison-expression> '; $i++) {
     $ary[$i] = gen_random(1);
   }'
 <function-call> ';'
@@ -417,12 +441,12 @@ grammar PHP5::Grammar
 <FUNCTION> <FUNCTION-NAME> '($rows, $cols) {'
 <assignment-expression> ';'
     '$mx =' <array-call> ';'
-    <FOR> '(' <assignment-expression> ';' <SCALAR> '<' <SCALAR> ';' <SCALAR> '++) {'
+    <FOR> '(' <assignment-expression> ';' <comparison-expression> ';' <SCALAR> '++) {'
 	<FOR> '($j=0; $j<$cols; $j++) {
 	    $mx[$i][$j] = $count++;
 	}
-    }
-    return($mx);
+    }'
+    <RETURN> '($mx);
 }'
 
 <FUNCTION> 'mmult ($rows, $cols, $m1, $m2) {
@@ -472,7 +496,7 @@ grammar PHP5::Grammar
     $flags = range (0,8192);'
     <FOR> '($i=2; $i<8193; $i++) {'
       <IF> '($flags[$i] > 0) {'
-        <FOR> '($k=$i+$i; $k <= 8192; $k+=$i) {
+        <FOR> '($k=$i+$i;' <comparison-expression> '; $k+=$i) {
           $flags[$k] = 0;
         }
         $count++;
@@ -498,13 +522,13 @@ grammar PHP5::Grammar
 <FUNCTION> 'getmicrotime()
 {'
 <lines>
-  'return ($t[\'sec\'] + $t[\'usec\'] / 1000000);
+  <RETURN> '($t[\'sec\'] + $t[\'usec\'] / 1000000);
 }'
 
 <FUNCTION> 'start_test()
 {'
 <lines>
-  'return getmicrotime();
+  <RETURN> 'getmicrotime();
 }'
 
 <FUNCTION> 'end_test($start, $name)
@@ -516,8 +540,8 @@ grammar PHP5::Grammar
   $pad = str_repeat(" ", 24-strlen($name)-strlen($num));'
 
   <ECHO> '$name.$pad.$num."\n";
-	ob_start();
-  return getmicrotime();
+	ob_start();'
+  <RETURN> 'getmicrotime();
 }'
 
 <FUNCTION> 'total()
