@@ -129,6 +129,9 @@ rule echo-expression
 rule return-expression
 	{ <RETURN> <function-call>
 	}
+rule print-expression
+	{ <PRINT> <DQ-STRING>
+	}
 
 	rule statement
 		{ <assignment-expression>
@@ -149,10 +152,8 @@ rule return-expression
 		{ <statements>
 		| <COMMENT>
 		| <for-expression> <statement> ';'
-		}
-
-	rule lines
-		{ <line>+
+	| <print-expression> ';'
+		| <function-declaration>
 		}
 
 	rule for-expression
@@ -161,31 +162,45 @@ rule return-expression
 			<assignment-expression> ';'
 			<comparison-expression> ';'
 			( <postincrement-expression>
-			| <postdecrement-expression> )
+			| <postdecrement-expression> )?
 			')'
+		}
+
+	rule if-expression
+		{
+		<IF> '(' ( <function-call>
+			 | <comparison-expression> ) ')'
+		}
+
+	rule while-expression
+		{
+		<WHILE> '(' ( <comparison-expression>
+			    | <postdecrement-expression>
+			    | <DIGITS> ) ')'
 		}
 
 	rule function-declaration
 		{
 		<FUNCTION> <FUNCTION-NAME> <parameter-list>
 			'{'
-			<lines>?
+			<line>*
 			'}'
 		}
 
 	rule TOP
 		{
 		<PHP-START>
-		<CLASS> <CLASS-NAME> '{'
-			<function-declaration>
-		'}'
+		<CLASS> <CLASS-NAME>
+			'{'
+			<function-declaration>*
+			'}'
 		<PHP-END>
 
 |
 # addglob.php
 # addpattern.php
 		<PHP-START>
-		<lines>
+		<line>+
 
 |
 
@@ -203,47 +218,23 @@ rule return-expression
 
 # corpus-5/bench.php
 <PHP-START>
-<IF> '(' <function-call> ')' '{'
-	<lines>
+<if-expression> '{'
+	<line>+
 '}'
 
-<function-declaration>
-
-<COMMENT>
-
-<FUNCTION> 'simplecall() {'
-	<for-expression> <statement> ';'
-'}'
-
-<COMMENT>
-
-<function-declaration>
-
-<FUNCTION> 'simpleucall() {'
-	<for-expression> <statement> ';'
-'}'
-
-<lines>
-
-<FUNCTION> 'simpleudcall() {'
-	<for-expression> <statement> ';'
-'}'
-
-<function-declaration>
-
-<lines>
+<line>+
 
 <FUNCTION> 'mandel() {'
-<lines>
+<line>+
   '$recen=-.45;'
-<lines>
+<line>+
   '$s=2*$r/$w1;'
-<lines>
+<line>+
   <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $y=$y+1) {
     $imc=$s*($y-$h2)+$imcen;'
     <FOR> '($x=0 ;' <comparison-expression> '; $x=$x+1) {
       $rec=$s*($x-$w2)+$recen;'
-<lines>
+<line>+
       '$re2=$re*$re;
       $im2=$im*$im;'
       <WHILE> '( ((($re2+$im2)<1000000) && $color>0)) {
@@ -253,21 +244,20 @@ rule return-expression
         $im2=$im*$im;
         $color=$color-1;
       }'
-      <IF> '(' <comparison-expression> ') {'
-        <PRINT> '"_";
-      }' <ELSE> '{'
-        <PRINT> <DQ-STRING> ';'
+      <if-expression> '{'
+        <line>+
+      '}' <ELSE> '{'
+        <line>+
       '}'
     '}'
-    <PRINT> <DQ-STRING> ';'
-    <lines>
+    <line>+
   '}
 }'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> 'mandel2() {'
-  <lines>
+  <line>+
   <FOR> '(' <assignment-expression> '; printf("\n"), $C = $y*0.1 - 1.5,' <postdecrement-expression> ';' '){'
     <FOR> '($x=0; $c = $x*0.04 - 2, $z=0, $Z=0,' <postincrement-expression> '< 75;){'
       <FOR> '($r=$c, $i=$C, $k=0; $t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000;' <postincrement-expression> ')'
@@ -277,20 +267,15 @@ rule return-expression
   }
 }'
 
-<COMMENT>
+<line>
 
 <FUNCTION> 'Ack($m, $n){'
-  <IF> '(' <comparison-expression> ')' <RETURN> '$n+1;'
-  <IF> '(' <comparison-expression> ')' <RETURN> 'Ack($m-1, 1);'
+<if-expression> <RETURN> '$n+1;'
+<if-expression> <RETURN> 'Ack($m-1, 1);'
   <RETURN> 'Ack($m - 1, Ack($m, ($n - 1)));
 }'
 
-<FUNCTION> 'ackermann($n) {'
-<lines>
-  <PRINT> <DQ-STRING> ';'
-'}'
-
-<COMMENT>
+<line>+
 
 <FUNCTION> 'ary($n) {'
 <for-expression> '{'
@@ -300,10 +285,10 @@ rule return-expression
     $Y[$i] = $X[$i];
   }
   $last = $n-1;'
-  <PRINT> <DQ-STRING> ';'
+<print-expression> ';'
 '}'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> 'ary2($n) {'
   <FOR> '($i=0; $i<$n;) {
@@ -333,10 +318,10 @@ rule return-expression
     $Y[$i] = $X[$i]; --$i;
   }
   $last = $n-1;'
-  <PRINT> '"$Y[$last]\n";
-}'
+<print-expression> ';'
+'}'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> 'ary3($n) {'
 <for-expression> '{'
@@ -349,21 +334,16 @@ rule return-expression
     }
   }
   $last = $n-1;'
-  <PRINT> '"$Y[0] $Y[$last]\n";
-}'
+  <line>+
+'}'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> 'fibo_r($n){'
     <RETURN> '((' <comparison-expression> ') ? 1 : fibo_r($n - 2) + fibo_r($n - 1));
 }'
 
-<FUNCTION> 'fibo($n) {'
-<lines>
-  <PRINT> <DQ-STRING> ';'
-'}'
-
-<COMMENT>
+<line>+
 
 <FUNCTION> 'hash1($n) {'
 <for-expression> '{'
@@ -373,10 +353,10 @@ rule return-expression
 <for-expression> '{'
     <IF> '($X[dechex($i)]) {' <postincrement-expression> ';' '}'
   '}'
-  <PRINT> '"$c\n";
-}'
+  <line>+
+'}'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> 'hash2($n) {'
 <for-expression> '{'
@@ -386,25 +366,25 @@ rule return-expression
 <for-expression> '{'
     <FOREACH> '($hash1 as $key => $value) $hash2[$key] += $value;
   }'
-<lines>
+<line>+
   '$last  = "foo_".($n-1);'
-  <PRINT> '"$hash1[$first] $hash1[$last] $hash2[$first] $hash2[$last]\n";
-}'
+<line>+
+'}'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> 'gen_random ($n) {'
-<lines>
+<line>+
     <RETURN> '( ($n * ($LAST = ($LAST * IA + IC) % IM)) / IM );
 }'
 
 <FUNCTION> 'heapsort_r($n, &$ra) {
     $l = ($n >> 1) + 1;'
-    <lines>
+    <line>+
 
-    <WHILE> '(1) {'
-	<IF> '(' <comparison-expression> ') {
-	    $rra = $ra[--$l];
+<while-expression> '{'
+<if-expression> '{'
+	    '$rra = $ra[--$l];
 	}' <ELSE> '{
 	    $rra = $ra[$ir];
 	    $ra[$ir] = $ra[1];'
@@ -413,11 +393,11 @@ rule return-expression
 		<RETURN> ';'
 	    '}'
 	'}'
-	<lines>
+	<line>+
 	'$j = $l << 1;'
-	<WHILE> '(' <comparison-expression> ') {'
+<while-expression> '{'
 	    <IF> '((' <comparison-expression> ') && ($ra[$j] < $ra[$j+1])) {'
-		<lines>
+		<line>+
 	    '}'
 	    <IF> '($rra < $ra[$j]) {
 		$ra[$i] = $ra[$j];
@@ -431,18 +411,18 @@ rule return-expression
 }'
 
 <FUNCTION> 'heapsort($N) {'
-<lines>
+<line>+
 <for-expression> '{'
     '$ary[$i] = gen_random(1);
   }'
-<lines>
+<line>+
   'printf("%.10f\n", $ary[$N]);
 }'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> <FUNCTION-NAME> '($rows, $cols) {'
-<lines>
+<line>+
 <for-expression> '{'
   <for-expression> '{'
 	    '$mx[$i][$j] = $count++;
@@ -452,74 +432,74 @@ rule return-expression
 }'
 
 <FUNCTION> 'mmult ($rows, $cols, $m1, $m2) {'
-<lines>
+<line>+
 <for-expression> '{'
   <for-expression> '{'
-    <lines>
+    <line>+
 	    <for-expression> '{'
 		'$x += $m1[$i][$k] * $m2[$k][$j];
 	    }
 	    $m3[$i][$j] = $x;
 	}
     }'
-<lines>
+<line>+
 '}'
 
 <FUNCTION> 'matrix($n) {'
-<lines>
-  <WHILE> '($n--) {'
-<lines>
+<line>+
+<while-expression> '{'
+<line>+
   '}'
-  <PRINT> <DQ-STRING> ';'
+<print-expression> ';'
 '}'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> 'nestedloop($n) {'
-<lines>
+<line>+
 <for-expression>
   <for-expression>
     <for-expression>
       <for-expression>
         <for-expression>
           <for-expression> <statement> ';'
-  <PRINT> '"$x\n";
-}'
+<print-expression> ';'
+'}'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> <FUNCTION-NAME> '($n) {'
-<lines>
+<line>+
   <WHILE> '($n-- > 0) {'
-<lines>
+<line>+
     <for-expression> '{'
       <IF> '($flags[$i] > 0) {'
         <FOR> '($k=$i+$i;' <comparison-expression> '; $k+=$i) {
           $flags[$k] = 0;
         }'
-<lines>
+<line>+
       '}'
     '}'
   '}'
-  <PRINT> <DQ-STRING> ';'
+<print-expression> ';'
 '}'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> 'strcat($n) {'
-<lines>
+<line>+
   <WHILE> '($n-- > 0) {
     $str .= "hello\n";
   }'
-  <lines>
-  <PRINT> <DQ-STRING> ';'
+  <line>+
+<print-expression> ';'
 '}'
 
-<COMMENT>
+<line>+
 
 <FUNCTION> 'getmicrotime()
 {'
-<lines>
+<line>+
   <RETURN> '($t[\'sec\'] + $t[\'usec\'] / 1000000);
 }'
 
@@ -527,26 +507,26 @@ rule return-expression
 
 <FUNCTION> 'end_test($start, $name)
 {'
-<lines>
+<line>+
   '$total += $end-$start;
   $num = number_format($end-$start,3);
   $pad = str_repeat(" ", 24-strlen($name)-strlen($num));'
 
   <ECHO> '$name.$pad.$num."\n";'
-<lines>
+<line>+
 '}'
 
 <FUNCTION> 'total()
 {'
-<lines>
+<line>+
   <ECHO> '$pad.' <DQ-STRING> ';'
-<lines>
+<line>+
   '$pad = str_repeat(" ", 24-strlen("Total")-strlen($num));'
   <ECHO> '"Total".$pad.$num."\n";
 }
 
 $t0 =' <assignment-expression> ';'
-<lines>
+<line>+
 <PHP-END>
 		}
 	}
