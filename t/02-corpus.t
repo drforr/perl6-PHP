@@ -11,10 +11,9 @@ subtest sub {
 
   ok $g.parsefile( 'corpus-v5/addglob.php' ), 'addglob.php';
   ok $g.parsefile( 'corpus-v5/addpattern.php' ), 'addpattern.php';
+  ok $g.parsefile( 'corpus-v5/a.php' ), 'a.php';
+  ok $g.parsefile( 'corpus-v5/bench.php' ), 'bench.php';
 
-#addpattern.php
-#a.php
-#bench.php
 #book.php
 #b.php
 #bug39542.php
