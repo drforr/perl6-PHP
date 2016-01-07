@@ -103,8 +103,16 @@ grammar PHP5::Grammar
 		| <SCALAR> '/' <DIGITS>
 		}
 
+	rule array-element
+		{ <SCALAR> '[' <SCALAR> ']'
+		| <SCALAR> '[' <DIGITS> ']'
+		}
+
 	rule assignment-expression
-		{ <SCALAR> '=' <constructor-call>
+		{ <array-element> '=' <math-expression>
+		| <array-element> '=' <SCALAR>
+		| <array-element> '=' <DIGITS>
+		| <SCALAR> '=' <constructor-call>
 		| <SCALAR> '=' <array-call>
 		| <SCALAR> '=' <method-call>
 		| <SCALAR> '=' <function-call>
@@ -150,7 +158,7 @@ rule print-expression
 | <echo-expression>
 | <return-expression>
 | <global-expression>
-	| <print-expression> ';'
+| <print-expression>
 		| <postincrement-expression>
 		| <method-call>
 		| <function-call>
@@ -160,9 +168,9 @@ rule print-expression
 	rule line
 		{ <statement>+ %% ';' ';'
 		| <COMMENT>
-		| <for-expression> <statement> ';'
-	#| <print-expression> ';'
+| <if-expression> <statement> ';'
 		| <class-declaration>
+		| <for-declaration>
 		| <function-declaration>
 		| <while-declaration>
 		}
@@ -188,6 +196,14 @@ rule print-expression
 		<WHILE> '(' ( <comparison-expression>
 			    | <postdecrement-expression>
 			    | <DIGITS> ) ')'
+		}
+
+	rule for-declaration
+		{
+		<for-expression>
+			( '{' <line>+ '}'
+			| <statement> ';'
+			)
 		}
 
 	rule while-declaration
@@ -252,7 +268,7 @@ rule print-expression
 <line>+
   '$s=2*$r/$w1;'
 <line>+
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $y=$y+1) {
+  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $y=' <math-expression> ') {
     $imc=$s*($y-$h2)+$imcen;'
     <FOR> '($x=0 ;' <comparison-expression> ';' <assignment-expression> ') {
       $rec=$s*($x-$w2)+$recen;'
@@ -289,7 +305,7 @@ rule print-expression
 <line>
 
 <FUNCTION> 'Ack($m, $n){'
-<if-expression> <statement> ';'
+<line>+
 <if-expression> <RETURN> 'Ack(' <math-expression> ', 1);'
   <RETURN> 'Ack(' <math-expression> ', Ack($m, (' <math-expression> ')));
 }'
@@ -297,9 +313,7 @@ rule print-expression
 <line>+
 
 <FUNCTION> 'ary($n) {'
-<for-expression> '{'
-    '$X[$i] = $i;
-  }'
+<line>+
 <for-expression> '{
     $Y[$i] = $X[$i];
   }'
@@ -309,20 +323,20 @@ rule print-expression
 <line>+
 
 <FUNCTION> 'ary2($n) {'
-  <FOR> '($i=0; $i<$n;) {
-    $X[$i] = $i; ++$i;
-    $X[$i] = $i; ++$i;
-    $X[$i] = $i; ++$i;
-    $X[$i] = $i; ++$i;
-    $X[$i] = $i; ++$i;
+<for-expression> '{'
+<line> '++$i;'
+<line> '++$i;'
+<line> '++$i;'
+<line> '++$i;'
+<line> '++$i;'
 
-    $X[$i] = $i; ++$i;
-    $X[$i] = $i; ++$i;
-    $X[$i] = $i; ++$i;
-    $X[$i] = $i; ++$i;
-    $X[$i] = $i; ++$i;
-  }'
-  <FOR> '($i=' <math-expression> ';' <comparison-expression> ';) {
+<line> '++$i;'
+<line> '++$i;'
+<line> '++$i;'
+<line> '++$i;'
+<line> '++$i;'
+  '}'
+<for-expression> '{
     $Y[$i] = $X[$i]; --$i;
     $Y[$i] = $X[$i]; --$i;
     $Y[$i] = $X[$i]; --$i;
@@ -341,12 +355,9 @@ rule print-expression
 <line>+
 
 <FUNCTION> 'ary3($n) {'
+<line>+
 <for-expression> '{'
-    '$X[$i] =' <math-expression> ';'
-    '$Y[$i] = 0;
-  }'
-<for-expression> '{'
-    <FOR> '($i=$n-1;' <comparison-expression> ';' <postdecrement-expression> ')' '{
+  <for-expression> '{
       $Y[$i] += $X[$i];
     }
   }'
@@ -367,7 +378,7 @@ rule print-expression
   }'
 <line>+
 <for-expression> '{'
-    <IF> '($X[dechex($i)]) {' <postincrement-expression> ';' '}'
+    <IF> '($X[dechex($i)]) {' <line>+ '}'
   '}'
   <line>+
 '}'
@@ -404,8 +415,8 @@ rule print-expression
 	}' <ELSE> '{
 	    $rra = $ra[$ir];
 	    $ra[$ir] = $ra[1];'
-	    <IF> '(--$ir == 1) {
-		$ra[1] = $rra;'
+	    <IF> '(--$ir == 1) {'
+<line>+
 		<RETURN> ';'
 	    '}'
 	'}'
