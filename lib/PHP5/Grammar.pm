@@ -348,7 +348,13 @@ rule _line_
 	}
 
 rule _math-expr_
-	{ <_math-sum_>
+	{ <_math-mod_>
+	}
+rule _math-mod_
+	{ <_math-shift_> ( '%' <_math-shift_> )*
+	}
+rule _math-shift_
+	{ <_math-sum_> ( ( '<<' | '>>' ) <_math-sum_> )*
 	}
 rule _math-sum_
 	{ <_math-product_> ( ( '+' | '-' ) <_math-product_> )*
@@ -408,7 +414,7 @@ rule _math-value_
     <FOR> '($x=0' ';' '$c = $x*0.04 - 2, $z=0, $Z=0,' <postincrement-expression> '< 75' ';' ')' '{'
       <FOR> '($r=$c, $i=$C, $k=0' ';' '$t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000' ';' <postincrement-expression> ')'
         <IF> '(' <_math-expr_> '> 500000) break' ';'
-      <ECHO> '$b[$k%16]' ';'
+      <ECHO> '$b[' <_math-expr_> ']' ';'
     '}'
   '}'
 '}'
@@ -457,7 +463,7 @@ rule _math-value_
 <line>+
 
 <FUNCTION> 'fibo_r($n)' '{'
-    <RETURN> '(' '(' <comparison-expression> ') ? 1 : fibo_r(' <_math-expr_> ') + fibo_r($n - 1))' ';'
+    <RETURN> '(' '(' <comparison-expression> ') ? 1 : fibo_r(' <_math-expr_> ') + fibo_r(' <_math-expr_> '))' ';'
 '}'
 
 <line>+
@@ -493,7 +499,7 @@ rule _math-value_
 '}'
 
 <FUNCTION> 'heapsort_r($n, &$ra)' '{'
-    '$l = ($n >> 1) + 1' ';'
+    <_line_>+
     <line>+
 
 <while-expression> '{'
