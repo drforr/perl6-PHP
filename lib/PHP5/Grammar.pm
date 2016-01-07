@@ -94,6 +94,11 @@ grammar PHP5::Grammar
 		| <ARRAY> '(' ')'
 		}
 
+	rule math-expression
+		{ <SCALAR> '+' <DIGITS>
+		| <SCALAR> '-' <DIGITS>
+		}
+
 	rule assignment-expression
 		{ <SCALAR> '=' <constructor-call>
 		| <SCALAR> '=' <array-call>
@@ -144,12 +149,8 @@ rule print-expression
 		| <array-call>
 		}
 
-	rule statements
-		{ <statement>+ %% ';' ';'
-		}
-
 	rule line
-		{ <statements>
+		{ <statement>+ %% ';' ';'
 		| <COMMENT>
 		| <for-expression> <statement> ';'
 	| <print-expression> ';'
@@ -284,8 +285,8 @@ rule print-expression
   <FOR> '($i=$n-1;' <comparison-expression> ';' <postdecrement-expression> ')' '{
     $Y[$i] = $X[$i];
   }
-  $last = $n-1;'
-<print-expression> ';'
+  $last =' <math-expression> ';'
+  <line>+
 '}'
 
 <line>+
@@ -304,7 +305,7 @@ rule print-expression
     $X[$i] = $i; ++$i;
     $X[$i] = $i; ++$i;
   }'
-  <FOR> '($i=$n-1;' <comparison-expression> ';) {
+  <FOR> '($i=' <math-expression> ';' <comparison-expression> ';) {
     $Y[$i] = $X[$i]; --$i;
     $Y[$i] = $X[$i]; --$i;
     $Y[$i] = $X[$i]; --$i;
@@ -317,23 +318,23 @@ rule print-expression
     $Y[$i] = $X[$i]; --$i;
     $Y[$i] = $X[$i]; --$i;
   }
-  $last = $n-1;'
-<print-expression> ';'
+  $last =' <math-expression> ';'
+  <line>+
 '}'
 
 <line>+
 
 <FUNCTION> 'ary3($n) {'
 <for-expression> '{'
-    '$X[$i] = $i + 1;
-    $Y[$i] = 0;
+    '$X[$i] =' <math-expression> ';'
+    '$Y[$i] = 0;
   }'
 <for-expression> '{'
     <FOR> '($i=$n-1;' <comparison-expression> ';' <postdecrement-expression> ')' '{
       $Y[$i] += $X[$i];
     }
   }
-  $last = $n-1;'
+  $last =' <math-expression> ';'
   <line>+
 '}'
 
@@ -367,7 +368,7 @@ rule print-expression
     <FOREACH> '($hash1 as $key => $value) $hash2[$key] += $value;
   }'
 <line>+
-  '$last  = "foo_".($n-1);'
+  '$last  = "foo_".(' <math-expression> ');'
 <line>+
 '}'
 
@@ -403,8 +404,8 @@ rule print-expression
 		$ra[$i] = $ra[$j];
 		$j += ($i = $j);
 	    }' <ELSE> '{
-		$j = $ir + 1;
-	    }
+		$j =' <math-expression> ';'
+	    '}
 	}
 	$ra[$i] = $rra;
     }
@@ -425,9 +426,9 @@ rule print-expression
 <line>+
 <for-expression> '{'
   <for-expression> '{'
-	    '$mx[$i][$j] = $count++;
-	}
-    }'
+	    '$mx[$i][$j] =' <postincrement-expression> ';'
+	'}'
+    '}'
     <RETURN> '($mx);
 }'
 
@@ -450,7 +451,7 @@ rule print-expression
 <while-expression> '{'
 <line>+
   '}'
-<print-expression> ';'
+  <line>+
 '}'
 
 <line>+
@@ -463,7 +464,7 @@ rule print-expression
       <for-expression>
         <for-expression>
           <for-expression> <statement> ';'
-<print-expression> ';'
+  <line>+
 '}'
 
 <line>+
@@ -481,7 +482,7 @@ rule print-expression
       '}'
     '}'
   '}'
-<print-expression> ';'
+  <line>+
 '}'
 
 <line>+
@@ -492,7 +493,6 @@ rule print-expression
     $str .= "hello\n";
   }'
   <line>+
-<print-expression> ';'
 '}'
 
 <line>+
