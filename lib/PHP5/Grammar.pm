@@ -20,7 +20,9 @@ grammar PHP5::Grammar
 	token GLOBAL { 'global' }
 
 	token STATIC { 'static' }
+
 	token PUBLIC { 'public' }
+	token PRIVATE { 'private' }
 
 	token ECHO { 'echo' } # Only because the lack of parens after it.
 	token NEW { 'new' } # Same reason as 'echo'.
@@ -97,6 +99,8 @@ grammar PHP5::Grammar
 	rule math-expression
 		{ <SCALAR> '+' <DIGITS>
 		| <SCALAR> '-' <DIGITS>
+		| <SCALAR> '*' <DIGITS>
+		| <SCALAR> '/' <DIGITS>
 		}
 
 	rule assignment-expression
@@ -104,6 +108,7 @@ grammar PHP5::Grammar
 		| <SCALAR> '=' <array-call>
 		| <SCALAR> '=' <method-call>
 		| <SCALAR> '=' <function-call>
+		| <SCALAR> '=' <math-expression>
 		| <SCALAR> '=' <DQ-STRING>
 		| <SCALAR> '=' <SCALAR>
 		| <SCALAR> '=' <FLOATING-POINT>
@@ -130,9 +135,11 @@ grammar PHP5::Grammar
 
 rule echo-expression
 	{ <ECHO> <DQ-STRING>
+	| <ECHO> <MACRO-NAME> '.' <DQ-STRING>
 	}
 rule return-expression
 	{ <RETURN> <function-call>
+	| <RETURN> <math-expression>
 	}
 rule print-expression
 	{ <PRINT> <DQ-STRING>
@@ -143,6 +150,7 @@ rule print-expression
 | <echo-expression>
 | <return-expression>
 | <global-expression>
+	| <print-expression> ';'
 		| <postincrement-expression>
 		| <method-call>
 		| <function-call>
@@ -153,8 +161,10 @@ rule print-expression
 		{ <statement>+ %% ';' ';'
 		| <COMMENT>
 		| <for-expression> <statement> ';'
-	| <print-expression> ';'
+	#| <print-expression> ';'
+		| <class-declaration>
 		| <function-declaration>
+		| <while-declaration>
 		}
 
 	rule for-expression
@@ -180,48 +190,59 @@ rule print-expression
 			    | <DIGITS> ) ')'
 		}
 
+	rule while-declaration
+		{
+		<while-expression>
+			'{'
+			<line>+
+			'}'
+		}
+
+	rule if-declaration
+		{
+		<if-expression>
+			'{'
+			<line>+
+			'}'
+		}
+
+	rule else-declaration
+		{
+		<ELSE>
+			'{'
+			<line>+
+			'}'
+		}
+
 	rule function-declaration
 		{
-		<FUNCTION> <FUNCTION-NAME> <parameter-list>
+		<STATIC>? <PUBLIC>? <FUNCTION> <FUNCTION-NAME> <parameter-list>
 			'{'
 			<line>*
 			'}'
 		}
 
-	rule TOP
+	rule class-declaration
 		{
-		<PHP-START>
 		<CLASS> <CLASS-NAME>
 			'{'
 			<function-declaration>*
 			'}'
-		<PHP-END>
+		}
 
-|
+	rule TOP
+		{
 # addglob.php
 # addpattern.php
+# a.php
 		<PHP-START>
 		<line>+
 
 |
 
-# a.php
-		<PHP-START>
-		<CLASS> <CLASS-NAME> '{'
-			<PUBLIC> <FUNCTION> <FUNCTION-NAME> <parameters> '{'
-				<ECHO> <MACRO-NAME> '.' <DQ-STRING> ';'
-			'}'
-
-			<STATIC> <PUBLIC> <function-declaration>
-		'}'
-
-|
-
 # corpus-5/bench.php
 <PHP-START>
-<if-expression> '{'
-	<line>+
-'}'
+<if-declaration>
 
 <line>+
 
@@ -233,7 +254,7 @@ rule print-expression
 <line>+
   <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $y=$y+1) {
     $imc=$s*($y-$h2)+$imcen;'
-    <FOR> '($x=0 ;' <comparison-expression> '; $x=$x+1) {
+    <FOR> '($x=0 ;' <comparison-expression> ';' <assignment-expression> ') {
       $rec=$s*($x-$w2)+$recen;'
 <line>+
       '$re2=$re*$re;
@@ -245,11 +266,8 @@ rule print-expression
         $im2=$im*$im;
         $color=$color-1;
       }'
-      <if-expression> '{'
-        <line>+
-      '}' <ELSE> '{'
-        <line>+
-      '}'
+<if-declaration>
+<else-declaration>
     '}'
     <line>+
   '}
@@ -271,9 +289,9 @@ rule print-expression
 <line>
 
 <FUNCTION> 'Ack($m, $n){'
-<if-expression> <RETURN> '$n+1;'
-<if-expression> <RETURN> 'Ack($m-1, 1);'
-  <RETURN> 'Ack($m - 1, Ack($m, ($n - 1)));
+<if-expression> <statement> ';'
+<if-expression> <RETURN> 'Ack(' <math-expression> ', 1);'
+  <RETURN> 'Ack(' <math-expression> ', Ack($m, (' <math-expression> ')));
 }'
 
 <line>+
@@ -282,10 +300,9 @@ rule print-expression
 <for-expression> '{'
     '$X[$i] = $i;
   }'
-  <FOR> '($i=$n-1;' <comparison-expression> ';' <postdecrement-expression> ')' '{
+<for-expression> '{
     $Y[$i] = $X[$i];
-  }
-  $last =' <math-expression> ';'
+  }'
   <line>+
 '}'
 
@@ -317,8 +334,7 @@ rule print-expression
     $Y[$i] = $X[$i]; --$i;
     $Y[$i] = $X[$i]; --$i;
     $Y[$i] = $X[$i]; --$i;
-  }
-  $last =' <math-expression> ';'
+  }'
   <line>+
 '}'
 
@@ -333,8 +349,7 @@ rule print-expression
     <FOR> '($i=$n-1;' <comparison-expression> ';' <postdecrement-expression> ')' '{
       $Y[$i] += $X[$i];
     }
-  }
-  $last =' <math-expression> ';'
+  }'
   <line>+
 '}'
 
@@ -349,8 +364,8 @@ rule print-expression
 <FUNCTION> 'hash1($n) {'
 <for-expression> '{'
     '$X[dechex($i)] = $i;
-  }
-  $c = 0;'
+  }'
+<line>+
 <for-expression> '{'
     <IF> '($X[dechex($i)]) {' <postincrement-expression> ';' '}'
   '}'
@@ -384,7 +399,7 @@ rule print-expression
     <line>+
 
 <while-expression> '{'
-<if-expression> '{'
+  <if-expression> '{'
 	    '$rra = $ra[--$l];
 	}' <ELSE> '{
 	    $rra = $ra[$ir];
@@ -403,8 +418,8 @@ rule print-expression
 	    <IF> '($rra < $ra[$j]) {
 		$ra[$i] = $ra[$j];
 		$j += ($i = $j);
-	    }' <ELSE> '{
-		$j =' <math-expression> ';'
+	    }' <ELSE> '{'
+<line>+
 	    '}
 	}
 	$ra[$i] = $rra;
@@ -444,14 +459,6 @@ rule print-expression
 	}
     }'
 <line>+
-'}'
-
-<FUNCTION> 'matrix($n) {'
-<line>+
-<while-expression> '{'
-<line>+
-  '}'
-  <line>+
 '}'
 
 <line>+
