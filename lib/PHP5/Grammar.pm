@@ -108,10 +108,19 @@ grammar PHP5::Grammar
 		| <SCALAR> '[' <DIGITS> ']'
 		}
 
+	rule hash-element
+		{ <SCALAR> '[' <DQ-STRING> ']'
+		}
+
 	rule assignment-expression
 		{ <array-element> '=' <math-expression>
+		| <array-element> '=' <function-call>
+		| <array-element> '=' <array-element>
 		| <array-element> '=' <SCALAR>
 		| <array-element> '=' <DIGITS>
+		| <hash-element> '=' <SCALAR>
+		| <hash-element> '=' <DIGITS>
+		| <SCALAR> '=' <assignment-expression>
 		| <SCALAR> '=' <constructor-call>
 		| <SCALAR> '=' <array-call>
 		| <SCALAR> '=' <method-call>
@@ -181,7 +190,8 @@ rule print-expression
 			<assignment-expression> ';'
 			<comparison-expression> ';'
 			( <postincrement-expression>
-			| <postdecrement-expression> )?
+			| <postdecrement-expression>
+			| <assignment-expression> )?
 			')'
 		}
 
@@ -217,9 +227,9 @@ rule print-expression
 	rule if-declaration
 		{
 		<if-expression>
-			'{'
-			<line>+
-			'}'
+			( '{' <line>+ '}'
+			| <statement> ';'
+			)
 		}
 
 	rule else-declaration
@@ -268,9 +278,9 @@ rule print-expression
 <line>+
   '$s=2*$r/$w1;'
 <line>+
-  <FOR> '(' <assignment-expression> ';' <comparison-expression> '; $y=' <math-expression> ') {
+<for-expression> '{
     $imc=$s*($y-$h2)+$imcen;'
-    <FOR> '($x=0 ;' <comparison-expression> ';' <assignment-expression> ') {
+<for-expression> '{
       $rec=$s*($x-$w2)+$recen;'
 <line>+
       '$re2=$re*$re;
@@ -309,16 +319,6 @@ rule print-expression
 <if-expression> <RETURN> 'Ack(' <math-expression> ', 1);'
   <RETURN> 'Ack(' <math-expression> ', Ack($m, (' <math-expression> ')));
 }'
-
-<line>+
-
-<FUNCTION> 'ary($n) {'
-<line>+
-<for-expression> '{
-    $Y[$i] = $X[$i];
-  }'
-  <line>+
-'}'
 
 <line>+
 
@@ -386,10 +386,7 @@ rule print-expression
 <line>+
 
 <FUNCTION> 'hash2($n) {'
-<for-expression> '{'
-    '$hash1["foo_$i"] = $i;
-    $hash2["foo_$i"] = 0;
-  }'
+<line>+
 <for-expression> '{'
     <FOREACH> '($hash1 as $key => $value) $hash2[$key] += $value;
   }'
@@ -429,19 +426,14 @@ rule print-expression
 	    <IF> '($rra < $ra[$j]) {
 		$ra[$i] = $ra[$j];
 		$j += ($i = $j);
-	    }' <ELSE> '{'
+	    }'
+<else-declaration>
+	'}'
 <line>+
-	    '}
-	}
-	$ra[$i] = $rra;
-    }
-}'
+    '}'
+'}'
 
 <FUNCTION> 'heapsort($N) {'
-<line>+
-<for-expression> '{'
-    '$ary[$i] = gen_random(1);
-  }'
 <line>+
   'printf("%.10f\n", $ary[$N]);
 }'
@@ -493,9 +485,9 @@ rule print-expression
 <line>+
     <for-expression> '{'
       <IF> '($flags[$i] > 0) {'
-        <FOR> '($k=$i+$i;' <comparison-expression> '; $k+=$i) {
-          $flags[$k] = 0;
-        }'
+        <FOR> '($k=$i+$i;' <comparison-expression> '; $k+=$i) {'
+<line>+
+        '}'
 <line>+
       '}'
     '}'
@@ -521,7 +513,7 @@ rule print-expression
   <RETURN> '($t[\'sec\'] + $t[\'usec\'] / 1000000);
 }'
 
-<function-declaration>
+<line>+
 
 <FUNCTION> 'end_test($start, $name)
 {'
@@ -541,9 +533,8 @@ rule print-expression
 <line>+
   '$pad = str_repeat(" ", 24-strlen("Total")-strlen($num));'
   <ECHO> '"Total".$pad.$num."\n";
-}
+}'
 
-$t0 =' <assignment-expression> ';'
 <line>+
 <PHP-END>
 		}
