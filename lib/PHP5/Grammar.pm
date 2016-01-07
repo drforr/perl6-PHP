@@ -101,6 +101,7 @@ grammar PHP5::Grammar
 		| <SCALAR> '-' <DIGITS>
 		| <SCALAR> '*' <DIGITS>
 		| <SCALAR> '/' <DIGITS>
+		| <SCALAR> '<<' <DIGITS>
 		}
 
 	rule array-element
@@ -133,7 +134,8 @@ grammar PHP5::Grammar
 		}
 
 	rule comparison-expression
-		{ <SCALAR> '<' <SCALAR>
+		{ <SCALAR> '<' <array-element>
+		| <SCALAR> '<' <SCALAR>
 		| <SCALAR> '<=' <SCALAR>
 		| <SCALAR> '<=' <DIGITS>
 		| <SCALAR> '<' <DIGITS>
@@ -164,20 +166,20 @@ rule print-expression
 
 	rule statement
 		{ <assignment-expression>
-| <echo-expression>
-| <return-expression>
-| <global-expression>
-| <print-expression>
+		| <echo-expression>
+		| <return-expression>
+		| <global-expression>
+		| <print-expression>
 		| <postincrement-expression>
 		| <method-call>
 		| <function-call>
 		| <array-call>
+| <if-expression> ( <statement> | '{' <line>+ '}' )
 		}
 
 	rule line
 		{ <statement>+ %% ';' ';'
 		| <COMMENT>
-| <if-expression> <statement> ';'
 		| <class-declaration>
 		| <for-declaration>
 		| <function-declaration>
@@ -227,8 +229,8 @@ rule print-expression
 	rule if-declaration
 		{
 		<if-expression>
-			( '{' <line>+ '}'
-			| <statement> ';'
+			( <statement> ';'
+			| '{' <line>+ '}'
 			)
 		}
 
@@ -336,19 +338,20 @@ rule print-expression
 <line> '++$i;'
 <line> '++$i;'
   '}'
-<for-expression> '{
-    $Y[$i] = $X[$i]; --$i;
-    $Y[$i] = $X[$i]; --$i;
-    $Y[$i] = $X[$i]; --$i;
-    $Y[$i] = $X[$i]; --$i;
-    $Y[$i] = $X[$i]; --$i;
+<for-expression> '{'
 
-    $Y[$i] = $X[$i]; --$i;
-    $Y[$i] = $X[$i]; --$i;
-    $Y[$i] = $X[$i]; --$i;
-    $Y[$i] = $X[$i]; --$i;
-    $Y[$i] = $X[$i]; --$i;
-  }'
+<line> '--$i;'
+<line> '--$i;'
+<line> '--$i;'
+<line> '--$i;'
+<line> '--$i;'
+
+<line> '--$i;'
+<line> '--$i;'
+<line> '--$i;'
+<line> '--$i;'
+<line> '--$i;'
+  '}'
   <line>+
 '}'
 
@@ -410,22 +413,21 @@ rule print-expression
   <if-expression> '{'
 	    '$rra = $ra[--$l];
 	}' <ELSE> '{
-	    $rra = $ra[$ir];
-	    $ra[$ir] = $ra[1];'
+	    $rra = $ra[$ir];'
+<line>+
 	    <IF> '(--$ir == 1) {'
 <line>+
 		<RETURN> ';'
 	    '}'
 	'}'
 	<line>+
-	'$j = $l << 1;'
 <while-expression> '{'
 	    <IF> '((' <comparison-expression> ') && ($ra[$j] < $ra[$j+1])) {'
 		<line>+
 	    '}'
-	    <IF> '($rra < $ra[$j]) {
-		$ra[$i] = $ra[$j];
-		$j += ($i = $j);
+<if-expression> '{'
+<line>+
+		'$j += ($i = $j);
 	    }'
 <else-declaration>
 	'}'
@@ -447,8 +449,8 @@ rule print-expression
 	    '$mx[$i][$j] =' <postincrement-expression> ';'
 	'}'
     '}'
-    <RETURN> '($mx);
-}'
+    <RETURN> '($mx);'
+'}'
 
 <FUNCTION> 'mmult ($rows, $cols, $m1, $m2) {'
 <line>+
