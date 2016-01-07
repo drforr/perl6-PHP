@@ -1,45 +1,99 @@
 use v6;
 grammar PHP5::Grammar
 	{
-	token PHP-START { '<?php' }
-	token PHP-END { '?>' }
+	token PHP-START
+		{ '<?php'
+		}
+	token PHP-END
+		{ '?>'
+		}
 
-	token IF { 'if' }
-	token ELSE { 'else' }
+	token IF
+		{ 'if'
+		}
+	token ELSE
+		{ 'else'
+		}
 
-	token WHILE { 'while' }
-	token FOR { 'for' }
-	token FOREACH { 'foreach' }
+	token WHILE
+		{ 'while'
+		}
+	token FOR
+		{ 'for'
+		}
+	token FOREACH
+		{ 'foreach' }
 
-	token ARRAY { 'array' }
+	token ARRAY
+		{ 'array'
+		}
 
-	token CLASS { 'class' }
-	token FUNCTION { 'function' }
+	token CLASS
+		{ 'class'
+		}
+	token FUNCTION
+		{ 'function'
+		}
 
 	# Declarations
-	token GLOBAL { 'global' }
+	token GLOBAL
+		{ 'global'
+		}
 
-	token STATIC { 'static' }
+	token STATIC
+		{ 'static'
+		}
 
-	token PUBLIC { 'public' }
-	token PRIVATE { 'private' }
+	token PUBLIC
+		{ 'public'
+		}
+	token PRIVATE
+		{ 'private'
+		}
 
-	token ECHO { 'echo' } # Only because the lack of parens after it.
-	token NEW { 'new' } # Same reason as 'echo'.
-	token PRINT { 'print' } # Same reason as 'echo'.
-	token RETURN { 'return' } # Same reason as 'echo'
+	# These keywords don't need parens.
+	token ECHO
+		{ 'echo'
+		}
+	token NEW
+		{ 'new'
+		}
+	token PRINT
+		{ 'print'
+		}
+	token RETURN
+		{ 'return'
+		}
 
-	token CLASS-NAME { ( <[ a .. z A .. Z 0 .. 9 ]>+ )+ %% '::' }
-	token FUNCTION-NAME { <[ a .. z A .. Z _ 0 .. 9 ]>+ }
-	token CONSTANT-NAME { <[ a .. z ]>+ '::' <[ A .. Z ]>+ }
-	token MACRO-NAME { '__' <[ A .. Z ]>+ '__' }
+	token CLASS-NAME
+		{ ( <[ a .. z A .. Z 0 .. 9 ]>+ )+ %% '::'
+		}
+	token FUNCTION-NAME
+		{ <[ a .. z A .. Z _ 0 .. 9 ]>+
+		}
+	token CONSTANT-NAME
+		{ <[ a .. z ]>+ '::' <[ A .. Z ]>+
+		}
+	token MACRO-NAME
+		{ '__' <[ A .. Z ]>+ '__'
+		}
 
-	token DIGITS { <[ 0 .. 9 ]>+ }
-	token FLOATING-POINT { <[ 0 .. 9 ]>+ '.' <[ 0 .. 9 ]>+ }
-	token SCALAR { '$' <[ a .. z A .. Z ]> <[ a .. z A .. Z 0 .. 9 ]>* }
+	token DIGITS
+		{ <[ 0 .. 9 ]>+
+		}
+	token FLOATING-POINT
+		{ <[ 0 .. 9 ]>+ '.' <[ 0 .. 9 ]>+
+		}
+	token SCALAR
+		{ '$' <[ a .. z A .. Z ]> <[ a .. z A .. Z 0 .. 9 ]>*
+		}
 
-	token DQ-STRING { '"' <-[ " ]>* '"' } # Will need work later.
-	token SQ-STRING { '\'' <-[ ' ]>* '\'' } # Will need work later.
+	token DQ-STRING
+		{ '"' <-[ " ]>* '"'
+		} # Will need work later.
+	token SQ-STRING
+		{ '\'' <-[ ' ]>* '\''
+		} # Will need work later.
 
 	token COMMENT
 		{ '/*' .*? '*/'
@@ -50,8 +104,10 @@ grammar PHP5::Grammar
 		{ <SQ-STRING>
 		| <CLASS-NAME>
 		| <DQ-STRING>
-		| <DIGITS>
+		| <array-element>
 		| <SCALAR>
+		| <DIGITS>
+		| <math-expression>
 		}
 
 	rule parameter
@@ -59,20 +115,24 @@ grammar PHP5::Grammar
 		| <SCALAR>
 		}
 
-	rule function-call
-		{ <FUNCTION-NAME> <arguments>
-		}
-
-	rule arguments
+	rule argument-list
 		{ '(' <argument>* %% ',' ')'
 		}
 
-	rule parameters
+	rule parameter-list
 		{ '(' <parameter>* %% ',' ')'
 		}
 
+	rule pair-list
+		{ '(' <pair>+ %% ',' ',' ')'
+		}
+
+	rule function-call
+		{ <FUNCTION-NAME> <argument-list>
+		}
+
 	rule method-call
-		{ <SCALAR> '->' <FUNCTION-NAME> <arguments>
+		{ <SCALAR> '->' <function-call>
 		}
 
 	rule constructor-call
@@ -83,30 +143,33 @@ grammar PHP5::Grammar
 		{ <GLOBAL> <SCALAR>
 		}
 
-	rule parameter-list
-		{ '(' <parameter>* %% ',' ')'
-		}
-
 	rule pair
 		{ <SQ-STRING> '=>' <SQ-STRING>
 		}
 
 	rule array-call
-		{ <ARRAY> '(' <pair>+ %% ',' ',' ')'
+		{ <ARRAY> <pair-list>
 		| <ARRAY> '(' ')'
 		}
 
 	rule math-expression
-		{ <SCALAR> '+' <DIGITS>
-		| <SCALAR> '-' <DIGITS>
-		| <SCALAR> '*' <DIGITS>
-		| <SCALAR> '/' <DIGITS>
-		| <SCALAR> '<<' <DIGITS>
+		{ <SCALAR> ( '+'
+                           | '-'
+			   | '-'
+			   | '*'
+			   | '/'
+			   | '<<'
+			   ) <DIGITS>
 		}
 
 	rule array-element
-		{ <SCALAR> '[' <SCALAR> ']'
-		| <SCALAR> '[' <DIGITS> ']'
+		{
+		<SCALAR>
+		'['
+			( <SCALAR>
+			| <DIGITS>
+			)
+		']'
 		}
 
 	rule hash-element
@@ -133,12 +196,22 @@ grammar PHP5::Grammar
 		| <SCALAR> '=' <DIGITS>
 		}
 
+	rule plus-assignment-expression
+		{ <array-element> '+=' <array-element>
+		}
+
+	rule dot-assignment-expression
+		{ <array-element> '.=' <DQ-STRING>
+		}
+
 	rule comparison-expression
-		{ <SCALAR> '<' <array-element>
-		| <SCALAR> '<' <SCALAR>
-		| <SCALAR> '<=' <SCALAR>
-		| <SCALAR> '<=' <DIGITS>
-		| <SCALAR> '<' <DIGITS>
+		{ <SCALAR> '<'  ( <array-element>
+				| <SCALAR>
+				| <DIGITS>
+				)
+		| <SCALAR> '<=' ( <SCALAR>
+				| <DIGITS>
+				)
 		| <SCALAR> '>' <DIGITS>
 		| <SCALAR> '>=' <DIGITS>
 		| <SCALAR> '==' <DIGITS>
@@ -151,14 +224,15 @@ grammar PHP5::Grammar
 		{ <SCALAR> '--'
 		}
 
-
 rule echo-expression
-	{ <ECHO> <DQ-STRING>
-	| <ECHO> <MACRO-NAME> '.' <DQ-STRING>
+	{ <ECHO> ( <DQ-STRING>
+		 | <MACRO-NAME> '.' <DQ-STRING>
+		 )
 	}
 rule return-expression
-	{ <RETURN> <function-call>
-	| <RETURN> <math-expression>
+	{ <RETURN> ( <function-call>
+		   | <math-expression>
+		   )
 	}
 rule print-expression
 	{ <PRINT> <DQ-STRING>
@@ -166,11 +240,14 @@ rule print-expression
 
 	rule statement
 		{ <assignment-expression>
+		| <plus-assignment-expression>
+		| <dot-assignment-expression>
 		| <echo-expression>
 		| <return-expression>
 		| <global-expression>
 		| <print-expression>
 		| <postincrement-expression>
+		| <postdecrement-expression>
 		| <method-call>
 		| <function-call>
 		| <array-call>
@@ -193,21 +270,28 @@ rule print-expression
 			<comparison-expression> ';'
 			( <postincrement-expression>
 			| <postdecrement-expression>
-			| <assignment-expression> )?
+			| <assignment-expression>
+			)?
 			')'
 		}
 
 	rule if-expression
 		{
-		<IF> '(' ( <function-call>
-			 | <comparison-expression> ) ')'
+		<IF>	'('
+			( <function-call>
+			| <comparison-expression>
+			)
+			')'
 		}
 
 	rule while-expression
 		{
-		<WHILE> '(' ( <comparison-expression>
-			    | <postdecrement-expression>
-			    | <DIGITS> ) ')'
+		<WHILE> '('
+			( <comparison-expression>
+			| <postdecrement-expression>
+			| <DIGITS>
+			)
+			')'
 		}
 
 	rule for-declaration
@@ -219,11 +303,7 @@ rule print-expression
 		}
 
 	rule while-declaration
-		{
-		<while-expression>
-			'{'
-			<line>+
-			'}'
+		{ <while-expression> '{' <line>+ '}'
 		}
 
 	rule if-declaration
@@ -235,16 +315,16 @@ rule print-expression
 		}
 
 	rule else-declaration
-		{
-		<ELSE>
-			'{'
-			<line>+
-			'}'
+		{ <ELSE> '{' <line>+ '}'
 		}
 
 	rule function-declaration
 		{
-		<STATIC>? <PUBLIC>? <FUNCTION> <FUNCTION-NAME> <parameter-list>
+		<STATIC>? <PUBLIC>? <FUNCTION> <FUNCTION-NAME>
+			'('
+			<parameter>* %% ','
+			')'
+
 			'{'
 			<line>*
 			'}'
@@ -257,6 +337,13 @@ rule print-expression
 			<function-declaration>*
 			'}'
 		}
+
+rule _math-expresion_
+	{ <SCALAR> '+' <SCALAR>
+	| <SCALAR> '-' <SCALAR>
+	| <SCALAR> '*' <SCALAR>
+	| <SCALAR> '/' <SCALAR>
+	}
 
 	rule TOP
 		{
@@ -276,24 +363,24 @@ rule print-expression
 
 <FUNCTION> 'mandel() {'
 <line>+
-  '$recen=-.45;'
+  '$recen=-.45' ';'
 <line>+
-  '$s=2*$r/$w1;'
+  '$s=2*$r/$w1' ';'
 <line>+
 <for-expression> '{
-    $imc=$s*($y-$h2)+$imcen;'
-<for-expression> '{
-      $rec=$s*($x-$w2)+$recen;'
+    $imc=$s*($y-$h2)+$imcen' ';'
+<for-expression> '{'
+      '$rec=$s*($x-$w2)+$recen' ';'
 <line>+
-      '$re2=$re*$re;
-      $im2=$im*$im;'
-      <WHILE> '( ((($re2+$im2)<1000000) && $color>0)) {
-        $im=$re*$im*2+$imc;
-        $re=$re2-$im2+$rec;
-        $re2=$re*$re;
-        $im2=$im*$im;
-        $color=$color-1;
-      }'
+      '$re2=$re*$re' ';'
+      '$im2=$im*$im' ';'
+      <WHILE> '( ((($re2+$im2)<1000000) && $color>0))' '{'
+        '$im=$re*$im*2+$imc' ';'
+        '$re=$re2-$im2+$rec' ';'
+        '$re2=$re*$re' ';'
+        '$im2=$im*$im' ';'
+        '$color=$color-1' ';'
+      '}'
 <if-declaration>
 <else-declaration>
     '}'
@@ -305,170 +392,153 @@ rule print-expression
 
 <FUNCTION> 'mandel2() {'
   <line>+
-  <FOR> '(' <assignment-expression> '; printf("\n"), $C = $y*0.1 - 1.5,' <postdecrement-expression> ';' '){'
-    <FOR> '($x=0; $c = $x*0.04 - 2, $z=0, $Z=0,' <postincrement-expression> '< 75;){'
-      <FOR> '($r=$c, $i=$C, $k=0; $t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000;' <postincrement-expression> ')'
-        <IF> '($z*$z + $Z*$Z > 500000) break;'
-      <ECHO> '$b[$k%16];
-    }
-  }
-}'
+  <FOR> '(' <assignment-expression> ';' 'printf("\n"), $C = $y*0.1 - 1.5,' <postdecrement-expression> ';' ')' '{'
+    <FOR> '($x=0' ';' '$c = $x*0.04 - 2, $z=0, $Z=0,' <postincrement-expression> '< 75' ';' ')' '{'
+      <FOR> '($r=$c, $i=$C, $k=0' ';' '$t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000' ';' <postincrement-expression> ')'
+        <IF> '($z*$z + $Z*$Z > 500000) break' ';'
+      <ECHO> '$b[$k%16]' ';'
+    '}'
+  '}'
+'}'
 
 <line>
 
-<FUNCTION> 'Ack($m, $n){'
+<FUNCTION> 'Ack($m, $n)' '{'
 <line>+
-<if-expression> <RETURN> 'Ack(' <math-expression> ', 1);'
-  <RETURN> 'Ack(' <math-expression> ', Ack($m, (' <math-expression> ')));
-}'
-
-<line>+
-
-<FUNCTION> 'ary2($n) {'
-<for-expression> '{'
-<line> '++$i;'
-<line> '++$i;'
-<line> '++$i;'
-<line> '++$i;'
-<line> '++$i;'
-
-<line> '++$i;'
-<line> '++$i;'
-<line> '++$i;'
-<line> '++$i;'
-<line> '++$i;'
-  '}'
-<for-expression> '{'
-
-<line> '--$i;'
-<line> '--$i;'
-<line> '--$i;'
-<line> '--$i;'
-<line> '--$i;'
-
-<line> '--$i;'
-<line> '--$i;'
-<line> '--$i;'
-<line> '--$i;'
-<line> '--$i;'
-  '}'
-  <line>+
+<if-expression> <RETURN> 'Ack(' <math-expression> ',' <DIGITS> ')' ';'
+  <RETURN> 'Ack(' <math-expression> ', Ack($m, (' <math-expression> ')))' ';'
 '}'
 
 <line>+
 
-<FUNCTION> 'ary3($n) {'
-<line>+
+<FUNCTION> 'ary2($n)' '{'
 <for-expression> '{'
-  <for-expression> '{
-      $Y[$i] += $X[$i];
-    }
-  }'
-  <line>+
-'}'
+<line> '++$i' ';'
+<line> '++$i' ';'
+<line> '++$i' ';'
+<line> '++$i' ';'
+<line> '++$i' ';'
 
-<line>+
-
-<FUNCTION> 'fibo_r($n){'
-    <RETURN> '((' <comparison-expression> ') ? 1 : fibo_r($n - 2) + fibo_r($n - 1));
-}'
-
-<line>+
-
-<FUNCTION> 'hash1($n) {'
+<line> '++$i' ';'
+<line> '++$i' ';'
+<line> '++$i' ';'
+<line> '++$i' ';'
+<line> '++$i' ';'
+  '}'
 <for-expression> '{'
-    '$X[dechex($i)] = $i;
-  }'
-<line>+
-<for-expression> '{'
-    <IF> '($X[dechex($i)]) {' <line>+ '}'
+
+<line> '--$i' ';'
+<line> '--$i' ';'
+<line> '--$i' ';'
+<line> '--$i' ';'
+<line> '--$i' ';'
+
+<line> '--$i' ';'
+<line> '--$i' ';'
+<line> '--$i' ';'
+<line> '--$i' ';'
+<line> '--$i' ';'
   '}'
   <line>+
 '}'
 
 <line>+
 
-<FUNCTION> 'hash2($n) {'
+<FUNCTION> 'fibo_r($n)' '{'
+    <RETURN> '(' '(' <comparison-expression> ') ? 1 : fibo_r($n - 2) + fibo_r($n - 1))' ';'
+'}'
+
+<line>+
+
+<FUNCTION> 'hash1($n)' '{'
+<for-expression> '{'
+    '$X[dechex($i)] = $i' ';'
+  '}'
 <line>+
 <for-expression> '{'
-    <FOREACH> '($hash1 as $key => $value) $hash2[$key] += $value;
-  }'
+    <IF> '($X[dechex($i)])' '{' <line>+ '}'
+  '}'
+  <line>+
+'}'
+
 <line>+
-  '$last  = "foo_".(' <math-expression> ');'
+
+<FUNCTION> 'hash2($n)' '{'
+<line>+
+<for-expression> '{'
+    <FOREACH> '(' <SCALAR> 'as' <SCALAR> '=>' <SCALAR> ')' '$hash2[$key] += $value' ';'
+  '}'
+<line>+
+  '$last  = "foo_".' '(' <math-expression> ')' ';'
 <line>+
 '}'
 
 <line>+
 
-<FUNCTION> 'gen_random ($n) {'
+<FUNCTION> 'gen_random ($n)' '{'
 <line>+
-    <RETURN> '( ($n * ($LAST = ($LAST * IA + IC) % IM)) / IM );
-}'
+    <RETURN> '( ($n * ($LAST = ($LAST * IA + IC) % IM)) / IM )' ';'
+'}'
 
-<FUNCTION> 'heapsort_r($n, &$ra) {
-    $l = ($n >> 1) + 1;'
+<FUNCTION> 'heapsort_r($n, &$ra)' '{'
+    '$l = ($n >> 1) + 1' ';'
     <line>+
 
 <while-expression> '{'
   <if-expression> '{'
-	    '$rra = $ra[--$l];
-	}' <ELSE> '{
-	    $rra = $ra[$ir];'
+	    '$rra = $ra[--$l]' ';'
+	'}' <ELSE> '{'
+	    '$rra = $ra[$ir]' ';'
 <line>+
-	    <IF> '(--$ir == 1) {'
+	    <IF> '(--$ir == 1)' '{'
 <line>+
 		<RETURN> ';'
 	    '}'
 	'}'
 	<line>+
 <while-expression> '{'
-	    <IF> '((' <comparison-expression> ') && ($ra[$j] < $ra[$j+1])) {'
+	    <IF> '(' '(' <comparison-expression> ') && ($ra[$j] < $ra[$j+1])' ')' '{'
 		<line>+
 	    '}'
 <if-expression> '{'
 <line>+
-		'$j += ($i = $j);
-	    }'
+		'$j += ($i = $j)' ';'
+	    '}'
 <else-declaration>
 	'}'
 <line>+
     '}'
 '}'
 
-<FUNCTION> 'heapsort($N) {'
-<line>+
-  'printf("%.10f\n", $ary[$N]);
-}'
-
 <line>+
 
-<FUNCTION> <FUNCTION-NAME> '($rows, $cols) {'
+<FUNCTION> <FUNCTION-NAME> '($rows, $cols)' '{'
 <line>+
 <for-expression> '{'
   <for-expression> '{'
 	    '$mx[$i][$j] =' <postincrement-expression> ';'
 	'}'
     '}'
-    <RETURN> '($mx);'
+<line>+
 '}'
 
-<FUNCTION> 'mmult ($rows, $cols, $m1, $m2) {'
+<FUNCTION> 'mmult ($rows, $cols, $m1, $m2)' '{'
 <line>+
 <for-expression> '{'
   <for-expression> '{'
     <line>+
 	    <for-expression> '{'
-		'$x += $m1[$i][$k] * $m2[$k][$j];
-	    }
-	    $m3[$i][$j] = $x;
-	}
-    }'
+		'$x += $m1[$i][$k] * $m2[$k][$j]' ';'
+	    '}'
+	    '$m3[$i][$j] = $x' ';'
+	'}'
+    '}'
 <line>+
 '}'
 
 <line>+
 
-<FUNCTION> 'nestedloop($n) {'
+<FUNCTION> 'nestedloop($n)' '{'
 <line>+
 <for-expression>
   <for-expression>
@@ -481,13 +551,13 @@ rule print-expression
 
 <line>+
 
-<FUNCTION> <FUNCTION-NAME> '($n) {'
+<FUNCTION> <FUNCTION-NAME> '($n)' '{'
 <line>+
-  <WHILE> '($n-- > 0) {'
+  <WHILE> '(' '$n-- > 0' ')' '{'
 <line>+
     <for-expression> '{'
-      <IF> '($flags[$i] > 0) {'
-        <FOR> '($k=$i+$i;' <comparison-expression> '; $k+=$i) {'
+      <IF> '(' <array-element> '>' '0' ')' '{'
+        <FOR> '(' '$k=$i+$i' ';' <comparison-expression> ';' '$k+=$i' ')' '{'
 <line>+
         '}'
 <line>+
@@ -499,43 +569,40 @@ rule print-expression
 
 <line>+
 
-<FUNCTION> 'strcat($n) {'
+<FUNCTION> 'strcat($n)' '{'
 <line>+
-  <WHILE> '($n-- > 0) {
-    $str .= "hello\n";
-  }'
+  <WHILE> '(' '$n-- > 0' ')' '{'
+    '$str .= "hello\n"' ';'
+  '}'
   <line>+
 '}'
 
 <line>+
 
-<FUNCTION> 'getmicrotime()
-{'
+<FUNCTION> 'getmicrotime()' '{'
 <line>+
-  <RETURN> '($t[\'sec\'] + $t[\'usec\'] / 1000000);
-}'
+  <RETURN> '($t[\'sec\'] + $t[\'usec\'] /' <DIGITS> ')' ';'
+'}'
 
 <line>+
 
-<FUNCTION> 'end_test($start, $name)
-{'
+<FUNCTION> 'end_test($start, $name)' '{'
 <line>+
-  '$total += $end-$start;
-  $num = number_format($end-$start,3);
-  $pad = str_repeat(" ", 24-strlen($name)-strlen($num));'
+  '$total += $end-$start' ';'
+  '$num = number_format($end-$start,3)' ';'
+  '$pad = str_repeat(" ", 24-strlen($name)-strlen($num))' ';'
 
-  <ECHO> '$name.$pad.$num."\n";'
+  <ECHO> <SCALAR> '.' <SCALAR> '.' <SCALAR> '.' <DQ-STRING> ';'
 <line>+
 '}'
 
-<FUNCTION> 'total()
-{'
+<FUNCTION> 'total()' '{'
 <line>+
-  <ECHO> '$pad.' <DQ-STRING> ';'
+  <ECHO> <SCALAR> '.' <DQ-STRING> ';'
 <line>+
-  '$pad = str_repeat(" ", 24-strlen("Total")-strlen($num));'
-  <ECHO> '"Total".$pad.$num."\n";
-}'
+  '$pad = str_repeat(" ", 24-strlen("Total")-strlen($num))' ';'
+  <ECHO> <DQ-STRING> '.' <SCALAR> '.' <SCALAR> '.' <DQ-STRING> ';'
+'}'
 
 <line>+
 <PHP-END>
