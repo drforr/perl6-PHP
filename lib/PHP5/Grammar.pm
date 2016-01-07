@@ -166,7 +166,8 @@ grammar PHP5::Grammar
 		{
 		<SCALAR>
 		'['
-			( <SCALAR>
+			( <function-call>
+			| <SCALAR>
 			| <DIGITS>
 			)
 		']'
@@ -344,7 +345,8 @@ rule print-expression
 #Value   ← [0-9]+ / '(' Expr ')'
 
 rule _line_
-	{ <SCALAR> '=' <_math-expr_> ';'
+	{ <SCALAR> '+=' <_math-expr_> ';'
+	| <SCALAR> '=' <_math-expr_> ';'
 	}
 
 rule _math-expr_
@@ -364,6 +366,7 @@ rule _math-product_
 	}
 rule _math-value_
 	{ <SCALAR>
+	| <FLOATING-POINT>
 	| <DIGITS>
 	| '(' <_math-expr_> ')'
 	}
@@ -387,14 +390,10 @@ rule _math-value_
 <FUNCTION> 'mandel() {'
 <line>+
   '$recen=-.45' ';'
-<line>+
-  <_line_>+
-<line>+
-<for-expression> '{'
   <_line_>+
 <for-expression> '{'
   <_line_>+
-<line>+
+<for-expression> '{'
   <_line_>+
       <WHILE> '( ((' <_math-expr_> '<1000000) && $color>0))' '{'
   <_line_>+
@@ -410,9 +409,9 @@ rule _math-value_
 
 <FUNCTION> 'mandel2() {'
   <line>+
-  <FOR> '(' <assignment-expression> ';' 'printf("\n"), $C = $y*0.1 - 1.5,' <postdecrement-expression> ';' ')' '{'
-    <FOR> '($x=0' ';' '$c = $x*0.04 - 2, $z=0, $Z=0,' <postincrement-expression> '< 75' ';' ')' '{'
-      <FOR> '($r=$c, $i=$C, $k=0' ';' '$t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000' ';' <postincrement-expression> ')'
+  <FOR> '(' <assignment-expression> ';' <function-call> ', $C =' <_math-expr_> ',' <postdecrement-expression> ';' ')' '{'
+    <FOR> '($x=0' ';' '$c =' <_math-expr_> ', $z=0, $Z=0,' <postincrement-expression> '< 75' ';' ')' '{'
+      <FOR> '($r=$c, $i=$C, $k=0' ';' '$t =' <_math-expr_> ', $Z =' <_math-expr_> ', $z=$t, $k<5000' ';' <postincrement-expression> ')'
         <IF> '(' <_math-expr_> '> 500000) break' ';'
       <ECHO> '$b[' <_math-expr_> ']' ';'
     '}'
@@ -423,8 +422,8 @@ rule _math-value_
 
 <FUNCTION> 'Ack($m, $n)' '{'
 <line>+
-<if-expression> <RETURN> 'Ack(' <math-expression> ',' <DIGITS> ')' ';'
-  <RETURN> 'Ack(' <math-expression> ', Ack($m, (' <math-expression> ')))' ';'
+<if-expression> <RETURN> 'Ack(' <_math-expr_> ',' <DIGITS> ')' ';'
+  <RETURN> 'Ack(' <_math-expr_> ', Ack($m, (' <_math-expr_> ')))' ';'
 '}'
 
 <line>+
@@ -469,13 +468,10 @@ rule _math-value_
 <line>+
 
 <FUNCTION> 'hash1($n)' '{'
-<for-expression> '{'
-    '$X[dechex($i)] = $i' ';'
-  '}'
 <line>+
 <for-expression> '{'
-    <IF> '($X[dechex($i)])' '{' <line>+ '}'
-  '}'
+    <IF> '(' <array-element> ')' '{' <line>+ '}'
+'}'
   <line>+
 '}'
 
@@ -487,7 +483,7 @@ rule _math-value_
     <FOREACH> '(' <SCALAR> 'as' <SCALAR> '=>' <SCALAR> ')' '$hash2[$key] += $value' ';'
   '}'
 <line>+
-  '$last  = "foo_".' '(' <math-expression> ')' ';'
+  '$last  = "foo_".' <_math-expr_> ';'
 <line>+
 '}'
 
@@ -500,7 +496,6 @@ rule _math-value_
 
 <FUNCTION> 'heapsort_r($n, &$ra)' '{'
     <_line_>+
-    <line>+
 
 <while-expression> '{'
   <if-expression> '{'
@@ -606,7 +601,7 @@ rule _math-value_
 
 <FUNCTION> 'end_test($start, $name)' '{'
 <line>+
-  '$total +=' <_math-expr_> ';'
+<_line_>+
   '$num = number_format(' <_math-expr_> ',' <DIGITS> ')' ';'
   '$pad = str_repeat(" ", 24-strlen($name)-strlen($num))' ';'
 
