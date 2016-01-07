@@ -338,11 +338,28 @@ rule print-expression
 			'}'
 		}
 
-rule _math-expresion_
-	{ <SCALAR> '+' <SCALAR>
-	| <SCALAR> '-' <SCALAR>
-	| <SCALAR> '*' <SCALAR>
-	| <SCALAR> '/' <SCALAR>
+#Expr    ← Sum
+#Sum     ← Product (('+' / '-') Product)*
+#Product ← Value (('*' / '/') Value)*
+#Value   ← [0-9]+ / '(' Expr ')'
+
+rule _line_
+	{ <SCALAR> '=' <_math-expr_> ';'
+	}
+
+rule _math-expr_
+	{ <_math-sum_>
+	}
+rule _math-sum_
+	{ <_math-product_> ( ( '+' | '-' ) <_math-product_> )*
+	}
+rule _math-product_
+	{ <_math-value_> ( ( '*' | '/' ) <_math-value_> )*
+	}
+rule _math-value_
+	{ <SCALAR>
+	| <DIGITS>
+	| '(' <_math-expr_> ')'
 	}
 
 	rule TOP
@@ -365,21 +382,16 @@ rule _math-expresion_
 <line>+
   '$recen=-.45' ';'
 <line>+
-  '$s=2*$r/$w1' ';'
+  <_line_>+
 <line>+
-<for-expression> '{
-    $imc=$s*($y-$h2)+$imcen' ';'
 <for-expression> '{'
-      '$rec=$s*($x-$w2)+$recen' ';'
+  <_line_>+
+<for-expression> '{'
+  <_line_>+
 <line>+
-      '$re2=$re*$re' ';'
-      '$im2=$im*$im' ';'
-      <WHILE> '( ((($re2+$im2)<1000000) && $color>0))' '{'
-        '$im=$re*$im*2+$imc' ';'
-        '$re=$re2-$im2+$rec' ';'
-        '$re2=$re*$re' ';'
-        '$im2=$im*$im' ';'
-        '$color=$color-1' ';'
+  <_line_>+
+      <WHILE> '( ((' <_math-expr_> '<1000000) && $color>0))' '{'
+  <_line_>+
       '}'
 <if-declaration>
 <else-declaration>
@@ -395,7 +407,7 @@ rule _math-expresion_
   <FOR> '(' <assignment-expression> ';' 'printf("\n"), $C = $y*0.1 - 1.5,' <postdecrement-expression> ';' ')' '{'
     <FOR> '($x=0' ';' '$c = $x*0.04 - 2, $z=0, $Z=0,' <postincrement-expression> '< 75' ';' ')' '{'
       <FOR> '($r=$c, $i=$C, $k=0' ';' '$t = $z*$z - $Z*$Z + $r, $Z = 2*$z*$Z + $i, $z=$t, $k<5000' ';' <postincrement-expression> ')'
-        <IF> '($z*$z + $Z*$Z > 500000) break' ';'
+        <IF> '(' <_math-expr_> '> 500000) break' ';'
       <ECHO> '$b[$k%16]' ';'
     '}'
   '}'
@@ -445,7 +457,7 @@ rule _math-expresion_
 <line>+
 
 <FUNCTION> 'fibo_r($n)' '{'
-    <RETURN> '(' '(' <comparison-expression> ') ? 1 : fibo_r($n - 2) + fibo_r($n - 1))' ';'
+    <RETURN> '(' '(' <comparison-expression> ') ? 1 : fibo_r(' <_math-expr_> ') + fibo_r($n - 1))' ';'
 '}'
 
 <line>+
@@ -557,7 +569,7 @@ rule _math-expresion_
 <line>+
     <for-expression> '{'
       <IF> '(' <array-element> '>' '0' ')' '{'
-        <FOR> '(' '$k=$i+$i' ';' <comparison-expression> ';' '$k+=$i' ')' '{'
+        <FOR> '(' '$k=' <_math-expr_> ';' <comparison-expression> ';' '$k+=$i' ')' '{'
 <line>+
         '}'
 <line>+
@@ -588,8 +600,8 @@ rule _math-expresion_
 
 <FUNCTION> 'end_test($start, $name)' '{'
 <line>+
-  '$total += $end-$start' ';'
-  '$num = number_format($end-$start,3)' ';'
+  '$total +=' <_math-expr_> ';'
+  '$num = number_format(' <_math-expr_> ',' <DIGITS> ')' ';'
   '$pad = str_repeat(" ", 24-strlen($name)-strlen($num))' ';'
 
   <ECHO> <SCALAR> '.' <SCALAR> '.' <SCALAR> '.' <DQ-STRING> ';'
