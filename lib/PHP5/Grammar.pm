@@ -2,98 +2,70 @@ use v6;
 grammar PHP5::Grammar
 	{
 	token PHP-START
-		{ '<?php'
-		}
+		{ '<?php' }
 	token PHP-END
-		{ '?>'
-		}
+		{ '?>' }
 
 	token IF
-		{ 'if'
-		}
+		{ 'if' }
 	token ELSE
-		{ 'else'
-		}
+		{ 'else' }
 
 	token WHILE
-		{ 'while'
-		}
+		{ 'while' }
 	token FOR
-		{ 'for'
-		}
+		{ 'for' }
 	token FOREACH
 		{ 'foreach' }
 
 	token ARRAY
-		{ 'array'
-		}
+		{ 'array' }
 
 	token CLASS
-		{ 'class'
-		}
+		{ 'class' }
 	token FUNCTION
-		{ 'function'
-		}
+		{ 'function' }
 
 	# Declarations
 	token GLOBAL
-		{ 'global'
-		}
+		{ 'global' }
 
 	token STATIC
-		{ 'static'
-		}
+		{ 'static' }
 
 	token PUBLIC
-		{ 'public'
-		}
-	token PRIVATE
-		{ 'private'
-		}
+		{ 'public' }
 
 	# These keywords don't need parens.
 	token ECHO
-		{ 'echo'
-		}
+		{ 'echo' }
 	token NEW
-		{ 'new'
-		}
+		{ 'new' }
 	token PRINT
-		{ 'print'
-		}
+		{ 'print' }
 	token RETURN
-		{ 'return'
-		}
+		{ 'return' }
 
 	token CLASS-NAME
-		{ ( <[ a .. z A .. Z 0 .. 9 ]>+ )+ %% '::'
-		}
+		{ ( <[ a .. z A .. Z 0 .. 9 ]>+ )+ %% '::' }
 	token FUNCTION-NAME
-		{ <[ a .. z A .. Z _ 0 .. 9 ]>+
-		}
+		{ <[ a .. z A .. Z _ 0 .. 9 ]>+ }
 	token CONSTANT-NAME
-		{ <[ a .. z ]>+ '::' <[ A .. Z ]>+
-		}
+		{ <[ a .. z ]>+ '::' <[ A .. Z ]>+ }
 	token MACRO-NAME
-		{ '__' <[ A .. Z ]>+ '__'
-		}
+		{ '__' <[ A .. Z ]>+ '__' }
 
 	token DIGITS
-		{ <[ 0 .. 9 ]>+
-		}
+		{ <[ 0 .. 9 ]>+ }
 	token FLOATING-POINT
-		{ <[ 0 .. 9 ]>+ '.' <[ 0 .. 9 ]>+
-		}
+		{ <[ 0 .. 9 ]>+ '.' <[ 0 .. 9 ]>+ }
 	token SCALAR
-		{ '$' <[ a .. z A .. Z ]> <[ a .. z A .. Z 0 .. 9 ]>*
-		}
+		{ '$' <[ a .. z A .. Z ]> <[ a .. z A .. Z 0 .. 9 ]>* }
 
 	token DQ-STRING
-		{ '"' <-[ " ]>* '"'
-		} # Will need work later.
+		{ '"' <-[ " ]>* '"' } # Will need work later.
 	token SQ-STRING
-		{ '\'' <-[ ' ]>* '\''
-		} # Will need work later.
+		{ '\'' <-[ ' ]>* '\'' } # Will need work later.
 
 	token COMMENT
 		{ '/*' .*? '*/'
@@ -106,8 +78,7 @@ grammar PHP5::Grammar
 		| <DQ-STRING>
 		| <array-element>
 		| <SCALAR>
-		| <DIGITS>
-		| <math-expression>
+		| <_math-expr_>
 		}
 
 	rule parameter
@@ -116,24 +87,19 @@ grammar PHP5::Grammar
 		}
 
 	rule argument-list
-		{ '(' <argument>* %% ',' ')'
-		}
+		{ '(' <argument>* %% ',' ')' }
 
 	rule parameter-list
-		{ '(' <parameter>* %% ',' ')'
-		}
+		{ '(' <parameter>* %% ',' ')' }
 
 	rule pair-list
-		{ '(' <pair>+ %% ',' ',' ')'
-		}
+		{ '(' <pair>+ %% ',' ',' ')' }
 
 	rule function-call
-		{ <FUNCTION-NAME> <argument-list>
-		}
+		{ <FUNCTION-NAME> <argument-list> }
 
 	rule method-call
-		{ <SCALAR> '->' <function-call>
-		}
+		{ <SCALAR> '->' <function-call> }
 
 	rule constructor-call
 		{ <NEW> <CLASS-NAME>
@@ -144,57 +110,43 @@ grammar PHP5::Grammar
 		}
 
 	rule pair
-		{ <SQ-STRING> '=>' <SQ-STRING>
-		}
+		{ <SQ-STRING> '=>' <SQ-STRING> }
 
 	rule array-call
 		{ <ARRAY> <pair-list>
 		| <ARRAY> '(' ')'
 		}
 
-	rule math-expression
-		{ <SCALAR> ( '+'
-                           | '-'
-			   | '-'
-			   | '*'
-			   | '/'
-			   | '<<'
-			   ) <DIGITS>
-		}
-
 	rule array-element
 		{
 		<SCALAR>
-		'['
-			( <function-call>
-			| <SCALAR>
-			| <DIGITS>
-			)
-		']'
+			'['
+				( <function-call>
+				| <_math-expr_>
+				)
+			']'
 		}
 
 	rule hash-element
-		{ <SCALAR> '[' <DQ-STRING> ']'
+		{ <SCALAR>
+			'['
+				<DQ-STRING>
+			']'
 		}
 
 	rule assignment-expression
-		{ <array-element> '=' <math-expression>
+{ <array-element> '=' <SCALAR> '+' <_math-expr_>
 		| <array-element> '=' <function-call>
 		| <array-element> '=' <array-element>
-		| <array-element> '=' <SCALAR>
-		| <array-element> '=' <DIGITS>
-		| <hash-element> '=' <SCALAR>
-		| <hash-element> '=' <DIGITS>
+| <array-element> '=' <_math-expr_>
+| <hash-element> '=' <_math-expr_>
 		| <SCALAR> '=' <assignment-expression>
 		| <SCALAR> '=' <constructor-call>
 		| <SCALAR> '=' <array-call>
 		| <SCALAR> '=' <method-call>
 		| <SCALAR> '=' <function-call>
-		| <SCALAR> '=' <math-expression>
+		| <SCALAR> '=' <_math-expr_>
 		| <SCALAR> '=' <DQ-STRING>
-		| <SCALAR> '=' <SCALAR>
-		| <SCALAR> '=' <FLOATING-POINT>
-		| <SCALAR> '=' <DIGITS>
 		}
 
 	rule plus-assignment-expression
@@ -207,15 +159,12 @@ grammar PHP5::Grammar
 
 	rule comparison-expression
 		{ <SCALAR> '<'  ( <array-element>
-				| <SCALAR>
-				| <DIGITS>
+				| <_math-expr_>
 				)
-		| <SCALAR> '<=' ( <SCALAR>
-				| <DIGITS>
-				)
-		| <SCALAR> '>' <DIGITS>
-		| <SCALAR> '>=' <DIGITS>
-		| <SCALAR> '==' <DIGITS>
+		| <SCALAR> '<=' <_math-expr_>
+		| <SCALAR> '>' <_math-expr_>
+		| <SCALAR> '>=' <_math-expr_>
+		| <SCALAR> '==' <_math-expr_>
 		}
 
 	rule postincrement-expression
@@ -226,13 +175,13 @@ grammar PHP5::Grammar
 		}
 
 rule echo-expression
-	{ <ECHO> ( <DQ-STRING>
-		 | <MACRO-NAME> '.' <DQ-STRING>
+	{ <ECHO> ( <MACRO-NAME> '.' <DQ-STRING>
+		 | <DQ-STRING>
 		 )
 	}
 rule return-expression
 	{ <RETURN> ( <function-call>
-		   | <math-expression>
+		   | <_math-expr_>
 		   )
 	}
 rule print-expression
@@ -267,51 +216,51 @@ rule print-expression
 	rule for-expression
 		{
 		<FOR>	'('
-			<assignment-expression> ';'
-			<comparison-expression> ';'
-			( <postincrement-expression>
-			| <postdecrement-expression>
-			| <assignment-expression>
-			)?
+				<assignment-expression> ';'
+				<comparison-expression> ';'
+				( <postincrement-expression>
+				| <postdecrement-expression>
+				| <assignment-expression>
+				)?
 			')'
 		}
 
 	rule if-expression
 		{
 		<IF>	'('
-			( <function-call>
-			| <comparison-expression>
-			)
+				( <function-call>
+				| <comparison-expression>
+				)
 			')'
 		}
 
 	rule while-expression
 		{
 		<WHILE> '('
-			( <comparison-expression>
-			| <postdecrement-expression>
-			| <DIGITS>
-			)
+				( <comparison-expression>
+				| <postdecrement-expression>
+				| <_math-expr_>
+				)
 			')'
 		}
 
 	rule for-declaration
 		{
 		<for-expression>
-			( '{' <line>+ '}'
+			( '{' <line>* '}'
 			| <statement> ';'
 			)
 		}
 
 	rule while-declaration
-		{ <while-expression> '{' <line>+ '}'
+		{ <while-expression> '{' <line>* '}'
 		}
 
 	rule if-declaration
 		{
 		<if-expression>
 			( <statement> ';'
-			| '{' <line>+ '}'
+			| '{' <line>* '}'
 			)
 		}
 
@@ -323,11 +272,11 @@ rule print-expression
 		{
 		<STATIC>? <PUBLIC>? <FUNCTION> <FUNCTION-NAME>
 			'('
-			<parameter>* %% ','
+				<parameter>* %% ','
 			')'
 
 			'{'
-			<line>*
+				<line>*
 			'}'
 		}
 
@@ -335,7 +284,7 @@ rule print-expression
 		{
 		<CLASS> <CLASS-NAME>
 			'{'
-			<function-declaration>*
+				<line>*
 			'}'
 		}
 
@@ -603,7 +552,7 @@ rule _math-value_
 <line>+
 <_line_>+
   '$num = number_format(' <_math-expr_> ',' <DIGITS> ')' ';'
-  '$pad = str_repeat(" ", 24-strlen($name)-strlen($num))' ';'
+  '$pad = str_repeat(" ", 24-' <function-call> '-' <function-call> ')' ';'
 
   <ECHO> <SCALAR> '.' <SCALAR> '.' <SCALAR> '.' <DQ-STRING> ';'
 <line>+
