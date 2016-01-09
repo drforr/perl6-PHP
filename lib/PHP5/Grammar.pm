@@ -79,6 +79,7 @@ grammar PHP5::Grammar
 		| <array-element>
 		| <SCALAR>
 		| <_math-expr_>
+| <function-call>
 		}
 
 	rule parameter
@@ -110,7 +111,9 @@ grammar PHP5::Grammar
 		}
 
 	rule pair
-		{ <SQ-STRING> '=>' <SQ-STRING> }
+		{ <SQ-STRING> '=>' <SQ-STRING>
+		| <SCALAR> '=>' <SCALAR>
+		}
 
 	rule array-call
 		{ <ARRAY> <pair-list>
@@ -135,8 +138,7 @@ grammar PHP5::Grammar
 		}
 
 	rule assignment-expression
-{ <array-element> '=' <SCALAR> '+' <_math-expr_>
-		| <array-element> '=' <function-call>
+		{ <array-element> '=' <function-call>
 		| <array-element> '=' <array-element>
 | <array-element> '=' <_math-expr_>
 | <hash-element> '=' <_math-expr_>
@@ -146,11 +148,14 @@ grammar PHP5::Grammar
 		| <SCALAR> '=' <method-call>
 		| <SCALAR> '=' <function-call>
 		| <SCALAR> '=' <_math-expr_>
+		| <SCALAR> '=' <array-element>
 		| <SCALAR> '=' <DQ-STRING>
 		}
 
 	rule plus-assignment-expression
 		{ <array-element> '+=' <array-element>
+		| <array-element> '+=' <SCALAR>
+		| <SCALAR> '+=' <SCALAR>
 		}
 
 	rule dot-assignment-expression
@@ -165,6 +170,7 @@ grammar PHP5::Grammar
 		| <SCALAR> '>' <_math-expr_>
 		| <SCALAR> '>=' <_math-expr_>
 		| <SCALAR> '==' <_math-expr_>
+		| <postdecrement-expression> '>' <_math-expr_>
 		}
 
 	rule postincrement-expression
@@ -177,6 +183,7 @@ grammar PHP5::Grammar
 rule echo-expression
 	{ <ECHO> ( <MACRO-NAME> '.' <DQ-STRING>
 		 | <DQ-STRING>
+		 | <array-element>
 		 )
 	}
 rule return-expression
@@ -221,6 +228,7 @@ rule print-expression
 				( <postincrement-expression>
 				| <postdecrement-expression>
 				| <assignment-expression>
+				| <plus-assignment-expression>
 				)?
 			')'
 		}
@@ -229,6 +237,7 @@ rule print-expression
 		{
 		<IF>	'('
 				( <function-call>
+				| <array-element>
 				| <comparison-expression>
 				)
 			')'
@@ -241,6 +250,14 @@ rule print-expression
 				| <postdecrement-expression>
 				| <_math-expr_>
 				)
+			')'
+		}
+
+	rule function-expression
+		{
+		<STATIC>? <PUBLIC>? <FUNCTION> <FUNCTION-NAME>
+			'('
+				<parameter>* %% ','
 			')'
 		}
 
@@ -269,23 +286,11 @@ rule print-expression
 		}
 
 	rule function-declaration
-		{
-		<STATIC>? <PUBLIC>? <FUNCTION> <FUNCTION-NAME>
-			'('
-				<parameter>* %% ','
-			')'
-
-			'{'
-				<line>*
-			'}'
+		{ <function-expression> '{' <line>* '}'
 		}
 
 	rule class-declaration
-		{
-		<CLASS> <CLASS-NAME>
-			'{'
-				<line>*
-			'}'
+		{ <CLASS> <CLASS-NAME> '{' <line>* '}'
 		}
 
 #Expr    ← Sum
@@ -358,11 +363,11 @@ rule _math-value_
 
 <FUNCTION> 'mandel2() {'
   <line>+
-  <FOR> '(' <assignment-expression> ';' <function-call> ', $C =' <_math-expr_> ',' <postdecrement-expression> ';' ')' '{'
-    <FOR> '($x=0' ';' '$c =' <_math-expr_> ', $z=0, $Z=0,' <postincrement-expression> '< 75' ';' ')' '{'
-      <FOR> '($r=$c, $i=$C, $k=0' ';' '$t =' <_math-expr_> ', $Z =' <_math-expr_> ', $z=$t, $k<5000' ';' <postincrement-expression> ')'
+  <FOR> '(' <assignment-expression> ';' <function-call> ',' <assignment-expression> ',' <postdecrement-expression> ';' ')' '{'
+    <FOR> '(' <assignment-expression> ';' <assignment-expression> ',' <assignment-expression> ',' <assignment-expression> ',' <postincrement-expression> '< 75' ';' ')' '{'
+      <FOR> '(' <assignment-expression> ',' <assignment-expression> ',' <assignment-expression> ';' <assignment-expression> ',' <assignment-expression> ',' <assignment-expression> ',' <comparison-expression> ';' <postincrement-expression> ')'
         <IF> '(' <_math-expr_> '> 500000) break' ';'
-      <ECHO> '$b[' <_math-expr_> ']' ';'
+      <echo-expression> ';'
     '}'
   '}'
 '}'
@@ -371,8 +376,8 @@ rule _math-value_
 
 <FUNCTION> 'Ack($m, $n)' '{'
 <line>+
-<if-expression> <RETURN> 'Ack(' <_math-expr_> ',' <DIGITS> ')' ';'
-  <RETURN> 'Ack(' <_math-expr_> ', Ack($m, (' <_math-expr_> ')))' ';'
+<if-expression> <RETURN> 'Ack(' <_math-expr_> ',' <_math-expr_> ')' ';'
+  <RETURN> 'Ack(' <_math-expr_> ',' <function-call> ')' ';'
 '}'
 
 <line>+
@@ -419,7 +424,7 @@ rule _math-value_
 <FUNCTION> 'hash1($n)' '{'
 <line>+
 <for-expression> '{'
-    <IF> '(' <array-element> ')' '{' <line>+ '}'
+  <if-declaration>
 '}'
   <line>+
 '}'
@@ -429,7 +434,7 @@ rule _math-value_
 <FUNCTION> 'hash2($n)' '{'
 <line>+
 <for-expression> '{'
-    <FOREACH> '(' <SCALAR> 'as' <SCALAR> '=>' <SCALAR> ')' '$hash2[$key] += $value' ';'
+    <FOREACH> '(' <SCALAR> 'as' <pair> ')' <plus-assignment-expression> ';'
   '}'
 <line>+
   '$last  = "foo_".' <_math-expr_> ';'
@@ -515,11 +520,11 @@ rule _math-value_
 
 <FUNCTION> <FUNCTION-NAME> '($n)' '{'
 <line>+
-  <WHILE> '(' '$n-- > 0' ')' '{'
+<while-expression> '{'
 <line>+
     <for-expression> '{'
       <IF> '(' <array-element> '>' '0' ')' '{'
-        <FOR> '(' '$k=' <_math-expr_> ';' <comparison-expression> ';' '$k+=$i' ')' '{'
+        <for-expression> '{'
 <line>+
         '}'
 <line>+
@@ -533,8 +538,8 @@ rule _math-value_
 
 <FUNCTION> 'strcat($n)' '{'
 <line>+
-  <WHILE> '(' '$n-- > 0' ')' '{'
-    '$str .= "hello\n"' ';'
+<while-expression> '{'
+    '$str .=' <DQ-STRING> ';'
   '}'
   <line>+
 '}'
